@@ -25,7 +25,7 @@ def load_config(_config, _run):
 
 def train(args: Namespace) -> None:
     # ********************************  参数初始化 **********************************************************************
-    print(args)
+    # print(args)
     # 保存运行配置参数的文件夹路径
     output_dir = Path(args.output_dir)
     # 如果记录本次运行的配置参数，就将其保存到output文件夹下的test.yaml文件
@@ -46,33 +46,34 @@ def train(args: Namespace) -> None:
 
     # ****************************** 构建数据集 **************************************************************************
     dataset_train = build_dataset(split='train', args=args)
-    dataset_val = build_dataset(split='val', args=args)
 
-    if args.distributed:
-        pass
-        # sampler_train = utils.DistributedWeightedSampler(dataset_train)
-        # # sampler_train = DistributedSampler(dataset_train)
-        # sampler_val = DistributedSampler(dataset_val, shuffle=False)
-    else:
-        # 训练集使用随机采样器
-        sampler_train = torch.utils.data.RandomSampler(dataset_train)
-        # 验证集使用顺序采样器
-        sampler_val = torch.utils.data.SequentialSampler(dataset_val)
+    # dataset_val = build_dataset(split='val', args=args)
 
-    # 训练集的批采样
-    batch_sampler_train = torch.utils.data.BatchSampler(sampler_train, args.batch_size, drop_last=True)
-
-    data_loader_train = DataLoader(dataset=dataset_train,
-                                   batch_sampler=batch_sampler_train,
-                                   collate_fn=misc.collate_fn,
-                                   num_workers=args.num_workers)
-    data_loader_val = DataLoader(
-        dataset=dataset_val,
-        batch_size=args.batch_size,
-        sampler=sampler_val,
-        drop_last=False,
-        collate_fn=misc.collate_fn,
-        num_workers=args.num_workers)
+    # if args.distributed:
+    #     pass
+    #     # sampler_train = utils.DistributedWeightedSampler(dataset_train)
+    #     # # sampler_train = DistributedSampler(dataset_train)
+    #     # sampler_val = DistributedSampler(dataset_val, shuffle=False)
+    # else:
+    #     # 训练集使用随机采样器
+    #     sampler_train = torch.utils.data.RandomSampler(dataset_train)
+    #     # 验证集使用顺序采样器
+    #     sampler_val = torch.utils.data.SequentialSampler(dataset_val)
+    #
+    # # 训练集的批采样
+    # batch_sampler_train = torch.utils.data.BatchSampler(sampler_train, args.batch_size, drop_last=True)
+    #
+    # data_loader_train = DataLoader(dataset=dataset_train,
+    #                                batch_sampler=batch_sampler_train,
+    #                                collate_fn=misc.collate_fn,
+    #                                num_workers=args.num_workers)
+    # data_loader_val = DataLoader(
+    #     dataset=dataset_val,
+    #     batch_size=args.batch_size,
+    #     sampler=sampler_val,
+    #     drop_last=False,
+    #     collate_fn=misc.collate_fn,
+    #     num_workers=args.num_workers)
 
     # ****************************** 开始训练 **************************************************************************
     print('........start training.....')

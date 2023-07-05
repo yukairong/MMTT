@@ -20,7 +20,7 @@ def build_mot_wildTrack(image_set: str, args):
     """
     将wildTrack数据集做成dataset
     :param image_set:  "train" or "val"
-    :param args:
+    :param args: 训练传入的config参数
     :return:
     """
 

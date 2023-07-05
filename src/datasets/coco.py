@@ -1,5 +1,7 @@
+import json
 import random
-from collections import Counter
+import time
+from collections import Counter, defaultdict
 
 import torch
 import torch.utils.data
@@ -8,13 +10,46 @@ import torchvision
 import datasets.transforms as T
 
 
+# 重写pycocotools的coco类
+class COCO:
+    def __init__(self, annotation_file=None):
+        """
+        重写COCO类,构建COCO类来用于读取和可视化标注
+        :param annotation_file: 标注文件的位置
+        """
+        # 加载数据集
+        self.dataset, self.anns, self.cats, self.imgs = dict(), dict(), dict(), dict()
+        self.imgToAnns, self.catToImgs = dict(), dict()
+        if not annotation_file == None:
+            print("loading annotations into memory...")
+            tic = time.time()
+            with open(annotation_file, 'r') as f:
+                dataset = json.load(f)
+
+            assert type(dataset) == dict, 'annotation file format {} not supported'.format(type(dataset))
+            print('Done (t={:0.2f}s'.format(time.time() - tic))
+            self.dataset = dataset
+            self.createIndex()
+
+    def createIndex(self):
+        print("creating index...")
+        anns, cats, imgs = {}, {}, {}
+        imgToAnns, catToImgs = defaultdict(list), defaultdict(list)
+        if 'annotations' in self.dataset:
+            for annotation in self.dataset['annotations']:
+                for (view, view_ann) in annotation.items():
+                    pass
+
+
+
 # *********************************************************************************************************************
 
 class CocoDetection(torchvision.datasets.CocoDetection):
     fields = ["labels", "area", "iscrowd", "boxes", "track_ids", "masks"]
 
     def __init__(self, img_folder, ann_file, transforms, norm_transforms,
-                 remove_no_obj_imgs=True, prev_frame=False, prev_frame_rnd_augs=0.0, prev_prev_frame=False,
+                 return_masks=False, overflow_boxes=False, remove_no_obj_imgs=True,
+                 prev_frame=False, prev_frame_rnd_augs=0.0, prev_prev_frame=False,
                  min_num_objects=0):
         super(CocoDetection, self).__init__(img_folder, ann_file)
         self._transforms = transforms

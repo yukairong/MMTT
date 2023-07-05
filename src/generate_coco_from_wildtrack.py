@@ -147,7 +147,9 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
 
     assert len(annotation_data_list) != 0, "标注信息为空"
 
-    seq_annotations = {f"{view_index}": [] for view_index in range(len(seqs_names))}
+    # 多视角
+    # seq_annotations = {f"{view_index}": [] for view_index in range(len(seqs_names))}
+    seq_annotations = []
     seq_annotations_per_frame = {}  # 记录每一帧上的序列标注信息
 
     # 对所有标注信息文件进行便利
@@ -201,7 +203,8 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
                     "track_id": personId
                 }
 
-                seq_annotations[str(view_id)].append(annotation)
+                # seq_annotations[str(view_id)].append(annotation)
+                seq_annotations.append(annotation)
 
                 # 当前帧没有出现在seq_annotations_per_frame中,创建该frame_id字典
                 if frame_id not in seq_annotations_per_frame:
@@ -214,20 +217,28 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
                 seq_annotations_per_frame[frame_id][view_id].append(annotation)
 
                 annotation_id += 1
-    annotations['annotations'].append(seq_annotations)
+    # TODO: 根据view_id进行排序
+    # annotations['annotations'].append(seq_annotations)
+    annotations['annotations'].extend(seq_annotations)
 
     # 每张图片的最大目标数量
     num_objs_per_image = {}
     # print(annotations["annotations"])
-    for view_anno in annotations["annotations"]:
-        # 第view个视角下的所有标注 anno
-        for view, annos in view_anno.items():
-            for anno in annos:
-                image_id = anno["image_id"]
-                if image_id in num_objs_per_image:
-                    num_objs_per_image[image_id] += 1
-                else:
-                    num_objs_per_image[image_id] = 1
+    # for view_anno in annotations["annotations"]:
+    #     # 第view个视角下的所有标注 anno
+    #     for view, annos in view_anno.items():
+    #         for anno in annos:
+    #             image_id = anno["image_id"]
+    #             if image_id in num_objs_per_image:
+    #                 num_objs_per_image[image_id] += 1
+    #             else:
+    #                 num_objs_per_image[image_id] = 1
+    for anno in annotations["annotations"]:
+        image_id = anno["image_id"]
+        if image_id in num_objs_per_image:
+            num_objs_per_image[image_id] += 1
+        else:
+            num_objs_per_image[image_id] = 1
 
     print(f'max objs per image: {max(list(num_objs_per_image.values()))}')
 
