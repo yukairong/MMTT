@@ -1,3 +1,21 @@
 lr: 0.0002
 output_dir: './output'
 device: 'cuda:0'
+seed: 20230715
+distributed: False
+num_workers: 8
+dataset: 'mot_wildTrack' # MOT数据集转换成coco格式
+mot_path_train: 'D:\数据集\MOT\Wildtrack_dataset\wildtrack_train_coco' # MOT数据集转换成coco格式的train保存路径
+mot_path_val: 'D:\数据集\MOT\Wildtrack_dataset\wildtrack_val_coco' # MOT数据集转换成coco格式的val保存路径
+track_prev_frame_rnd_augs: 0.01 # 对图像做crop增强
+track_prev_frame_range: 5 # 【-5，+5】范围作为相邻帧， Range of possible random previous frames
+train_split: Wildtrack_train_coco # wildTrack数据集转换成COCO格式后的train val 的实际文件夹名称
+val_split: Wildtrack_train_cross_val_frame_0_5_to_1_0_coco
+
+img_transform:
+  max_size: 1333
+  val_width: 800
+
+overflow_boxes: True
+
+

@@ -1,4 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """
 Transforms and data augmentation for both image + bbox.
 """
@@ -15,6 +14,14 @@ from ..utils.misc import interpolate
 
 
 def crop(image, target, region, overflow_boxes=False):
+    """
+
+    :param image:
+    :param target:
+    :param region:
+    :param overflow_boxes:
+    :return:
+    """
     i, j, h, w = region
     target = target.copy()
 
@@ -95,15 +102,15 @@ def hflip(image, target):
     if "boxes" in target:
         boxes = target["boxes"]
         boxes = boxes[:, [2, 1, 0, 3]] \
-            * torch.as_tensor([-1, 1, -1, 1]) \
-            + torch.as_tensor([width, 0, width, 0])
+                * torch.as_tensor([-1, 1, -1, 1]) \
+                + torch.as_tensor([width, 0, width, 0])
         target["boxes"] = boxes
 
     if "boxes_ignore" in target:
         boxes = target["boxes_ignore"]
         boxes = boxes[:, [2, 1, 0, 3]] \
-            * torch.as_tensor([-1, 1, -1, 1]) \
-            + torch.as_tensor([width, 0, width, 0])
+                * torch.as_tensor([-1, 1, -1, 1]) \
+                + torch.as_tensor([width, 0, width, 0])
         target["boxes_ignore"] = boxes
 
     if "masks" in target:
@@ -154,7 +161,7 @@ def resize(image, target, size, max_size=None):
     if "boxes" in target:
         boxes = target["boxes"]
         scaled_boxes = boxes \
-            * torch.as_tensor([ratio_width, ratio_height, ratio_width, ratio_height])
+                       * torch.as_tensor([ratio_width, ratio_height, ratio_width, ratio_height])
         target["boxes"] = scaled_boxes
 
     if "area" in target:
@@ -329,9 +336,9 @@ class RandomResizeTargets:
             _, scaled_width, scaled_height = rescaled_box_image.shape
 
             rescaled_box_image = rescaled_box_image[
-                :,
-                :scaled_width - max(x1 + scaled_width - img_w, 0),
-                :scaled_height - max(y1 + scaled_height - img_h, 0)]
+                                 :,
+                                 :scaled_width - max(x1 + scaled_width - img_w, 0),
+                                 :scaled_height - max(y1 + scaled_height - img_h, 0)]
 
             img[:, x1:x1 + scaled_width, y1:y1 + scaled_height] = rescaled_box_image
 
@@ -367,6 +374,7 @@ class RandomSelect:
     Randomly selects between transforms1 and transforms2,
     with probability p for transforms1 and (1 - p) for transforms2
     """
+
     def __init__(self, transforms1, transforms2, p=0.5):
         self.transforms1 = transforms1
         self.transforms2 = transforms2

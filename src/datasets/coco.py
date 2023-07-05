@@ -1,13 +1,14 @@
 import random
 from collections import Counter
-from pathlib import Path
 
 import torch
 import torch.utils.data
 import torchvision
 
-from . import transforms as T
+import transforms as T
 
+
+# *********************************************************************************************************************
 
 class CocoDetection(torchvision.datasets.CocoDetection):
     fields = ["labels", "area", "iscrowd", "boxes", "track_ids", "masks"]
@@ -113,12 +114,13 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         pass
 
 
+# *********************************************************************************************************************
 def make_coco_transforms(image_set, img_transform=None, overflow_boxes=False):
     """
-
-    :param image_set:
+    对数据集做变换
+    :param image_set: 'train' or 'val'
     :param img_transform:
-    :param overflow_boxes:
+    :param overflow_boxes: 对 box 做限制，防止超出图像边界
     :return:
     """
 
@@ -131,6 +133,7 @@ def make_coco_transforms(image_set, img_transform=None, overflow_boxes=False):
     random_size_crop = (384, 600)
 
     if img_transform is not None:
+        # img_transform 只有两个参数，max_size 和 val_width
         scale = img_transform.max_size / max_size
         max_size = img_transform.max_size
         val_width = img_transform.val_width
@@ -157,44 +160,4 @@ def make_coco_transforms(image_set, img_transform=None, overflow_boxes=False):
     else:
         ValueError(f'unknown {image_set}')
 
-    # transforms.append(normalize)
     return T.Compose(transforms), normalize
-
-
-def build_coco(image_set: str, root_path, jitter, mode='instances'):
-    """
-
-    :param image_set: "train" or "val"
-    :param root_path: wildTrack数据集转换成COCO格式的根路径
-    :param jitter: 对图像做随机裁剪【抖动】
-    :param mode:
-    :return:
-    """
-
-    root = Path(root_path)
-    assert root.exists(), f'provided root_COCO path {root} does not exist'
-
-    assert image_set == "train" or "val", f"image_set must be 'train' | 'val' in {__file__}."
-
-    splits = {
-        "train": (root / "train2017", root / "annotations" / f'{mode}_train2017.json'),
-        "val": (root / "val2017", root / "annotations" / f'{mode}_val2017.json'),
-    }
-
-    # 对于训练集，可能会对数据作裁剪
-    if image_set == 'train':
-        prev_frame_rnd_augs = jitter
-    elif image_set == 'val':
-        prev_frame_rnd_augs = 0.0
-
-    transforms, norm_transforms = make_coco_transforms(image_set, img_transform, overflow_boxes)
-    img_folder, ann_file = splits[split]
-    dataset = CocoDetection(
-        img_folder, ann_file, transforms, norm_transforms,
-        return_masks=masks,
-        prev_frame=tracking,
-        prev_frame_rnd_augs=prev_frame_rnd_augs,
-        prev_prev_frame=track_prev_prev_frame,
-        min_num_objects=coco_min_num_objects)
-
-    return dataset
