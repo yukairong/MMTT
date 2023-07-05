@@ -14,7 +14,7 @@ from src.utils.misc import nested_dict_to_namespace
 # 创建一条实验记录
 ex = sacred.Experiment('train')
 # 添加运行需要的配置文件 yaml格式
-ex.add_config('cfgs/demo.yaml')
+ex.add_config('cfgs/train.yaml')
 
 
 # 打印当前运行的参数和对应的值
@@ -31,7 +31,7 @@ def train(args: Namespace) -> None:
     # 如果记录本次运行的配置参数，就将其保存到output文件夹下的test.yaml文件
     if args.output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
-        yaml.dump(vars(args), open(output_dir / 'test.yaml', 'w'), allow_unicode=True)
+        yaml.dump(vars(args), open(output_dir / 'train.yaml', 'w'), allow_unicode=True)
 
     device = torch.device(args.device)
     seed = args.seed

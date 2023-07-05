@@ -1,0 +1,17 @@
+dataset: mot_wildTrack
+device: cuda:0
+distributed: false
+img_transform: !!python/object:argparse.Namespace
+  max_size: 1333
+  val_width: 800
+lr: 0.0002
+mot_path_train: D:\datasets\MOT\Wildtrack_dataset\wildtrack_train_coco
+mot_path_val: D:\datasets\MOT\Wildtrack_dataset\wildtrack_val_coco
+num_workers: 8
+output_dir: ./output
+overflow_boxes: true
+seed: 20230715
+track_prev_frame_range: 5
+track_prev_frame_rnd_augs: 0.01
+train_split: Wildtrack_train_coco
+val_split: Wildtrack_train_cross_val_frame_0_5_to_1_0_coco

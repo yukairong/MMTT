@@ -1,4 +1,0 @@
-device: cuda:0
-lr: 0.0002
-output_dir: ./output
-seed: 367885324
