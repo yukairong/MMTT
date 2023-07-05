@@ -2,7 +2,7 @@ from argparse import Namespace
 
 from torch.utils.data import Dataset
 
-from mot import build_mot_wildTrack
+from datasets.mot import build_mot_wildTrack
 
 
 def build_dataset(split: str, args: Namespace) -> Dataset:

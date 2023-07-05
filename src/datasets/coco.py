@@ -5,7 +5,7 @@ import torch
 import torch.utils.data
 import torchvision
 
-import transforms as T
+import datasets.transforms as T
 
 
 # *********************************************************************************************************************

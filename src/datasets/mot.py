@@ -4,7 +4,7 @@ import random
 from pathlib import Path
 import torch
 
-from coco import CocoDetection, make_coco_transforms
+from datasets.coco import CocoDetection, make_coco_transforms
 import csv
 import os
 import random
