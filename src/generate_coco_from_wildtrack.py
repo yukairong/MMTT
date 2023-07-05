@@ -17,6 +17,8 @@ from pycocotools.coco import COCO
 from scipy.optimize import linear_sum_assignment
 from torchvision.ops.boxes import box_iou
 
+from utils.dataset_utils import parse_json_file, xyxy_convert_to_xywh
+
 # 存储数据集中的seqs信息
 DATSET_SEQS_INFO = {
     "WildTrack" : {"img_width": 1920, "img_height": 1080, "seq_length": 401}
@@ -134,7 +136,104 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
         for img_dict in annotations["images"]
     }
 
-    # TODO: 标注信息进行处理
+    # wildTrack数据集的标注信息文件路径
+    annotation_data_dir = os.path.join(data_root, "annotations_positions")
+
+    if not os.path.exists(annotation_data_dir):
+        print(f"{annotation_data_dir} 路径不正确")
+
+    # wildTrack数据集中的所有json标注信息文件列表
+    annotation_data_list = os.listdir(annotation_data_dir)
+
+    assert len(annotation_data_list) != 0, "标注信息为空"
+
+    seq_annotations = {f"{view_index}": [] for view_index in range(len(seqs_names))}
+    seq_annotations_per_frame = {}  # 记录每一帧上的序列标注信息
+
+    # 对所有标注信息文件进行便利
+    for seq_frame_id, annotation_data in enumerate(annotation_data_list):
+        # 每个json文件的路径信息
+        json_file = os.path.join(annotation_data_dir, annotation_data)
+
+        if not os.path.isfile(json_file):
+            print(f"{json_file} 该标注JSON文件不存在,已跳过")
+            continue
+
+        json_res = parse_json_file(json_file)   # JSON数据详情
+
+        # 对同一时刻,对每个视角下不同的人的标注信息进行便利
+        for res in json_res:
+            personId = res["personID"]  # person的id
+            positionId = res["positionID"]  # position Id
+            view_annotation_data_list = res["views"]  # 各个视角的标注信息
+
+            for view_annotation_data in view_annotation_data_list:
+                view_id = view_annotation_data["viewNum"]   # 当前视角id
+                xmax = view_annotation_data["xmax"]
+                xmin = view_annotation_data["xmin"]
+                ymax = view_annotation_data["ymax"]
+                ymin = view_annotation_data["ymin"]
+
+                # COCO的bbox定义为 左上角坐标及长宽, xyxy -> xywh
+                bbox = list(xyxy_convert_to_xywh((xmin, ymin, xmax, ymax)))
+
+                area = bbox[2] * bbox[3]
+                visibility = 1 if area != 0 else 0  # 有框说明可见,反之不可见
+                frame_id = seq_frame_id # 记录当前的序列帧id
+                image_id = img_file_name_to_id.get(f"{seqs_names[view_id]}_{annotation_data.replace('.json', '.png')}")
+                if image_id is None:
+                    continue
+
+                track_id = personId # 轨迹与每个人的id相一致
+
+                annotation = {
+                    "id": annotation_id,
+                    "bbox": bbox,
+                    "image_id": image_id,
+                    "segmentation": [],
+                    "ignore": 0 if visibility == 1 else 1,
+                    "visibility": visibility,
+                    "area": area,
+                    "iscrowd": 0,
+                    "view_id": view_id,
+                    "seq": seqs_names[view_id],
+                    "category_id": annotations['categories'][0]['id'],
+                    "track_id": personId
+                }
+
+                seq_annotations[str(view_id)].append(annotation)
+
+                # 当前帧没有出现在seq_annotations_per_frame中,创建该frame_id字典
+                if frame_id not in seq_annotations_per_frame:
+                    seq_annotations_per_frame[frame_id] = {}
+
+                # 当前帧存在,但是视角信息还未初始化
+                if view_id not in seq_annotations_per_frame[frame_id]:
+                    seq_annotations_per_frame[frame_id][view_id] = []
+
+                seq_annotations_per_frame[frame_id][view_id].append(annotation)
+
+                annotation_id += 1
+    annotations['annotations'].append(seq_annotations)
+
+    # 每张图片的最大目标数量
+    num_objs_per_image = {}
+    # print(annotations["annotations"])
+    for view_anno in annotations["annotations"]:
+        # 第view个视角下的所有标注 anno
+        for view, annos in view_anno.items():
+            for anno in annos:
+                image_id = anno["image_id"]
+                if image_id in num_objs_per_image:
+                    num_objs_per_image[image_id] += 1
+                else:
+                    num_objs_per_image[image_id] = 1
+
+    print(f'max objs per image: {max(list(num_objs_per_image.values()))}')
+
+    with open(annotation_dir, 'w') as anno_file:
+        json.dump(annotations, anno_file, indent=4)
+
 
 if __name__ == '__main__':
     # parser = argparse.ArgumentParser(description="Generate COCO from WildTrack")
