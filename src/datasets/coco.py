@@ -1,51 +1,20 @@
-import json
 import random
-import time
-from collections import Counter, defaultdict
+from collections import Counter
 
 import torch
 import torch.utils.data
 import torchvision
+from pycocotools import mask as coco_mask
 
-import datasets.transforms as T
-
-
-# 重写pycocotools的coco类
-class COCO:
-    def __init__(self, annotation_file=None):
-        """
-        重写COCO类,构建COCO类来用于读取和可视化标注
-        :param annotation_file: 标注文件的位置
-        """
-        # 加载数据集
-        self.dataset, self.anns, self.cats, self.imgs = dict(), dict(), dict(), dict()
-        self.imgToAnns, self.catToImgs = dict(), dict()
-        if not annotation_file == None:
-            print("loading annotations into memory...")
-            tic = time.time()
-            with open(annotation_file, 'r') as f:
-                dataset = json.load(f)
-
-            assert type(dataset) == dict, 'annotation file format {} not supported'.format(type(dataset))
-            print('Done (t={:0.2f}s'.format(time.time() - tic))
-            self.dataset = dataset
-            self.createIndex()
-
-    def createIndex(self):
-        print("creating index...")
-        anns, cats, imgs = {}, {}, {}
-        imgToAnns, catToImgs = defaultdict(list), defaultdict(list)
-        if 'annotations' in self.dataset:
-            for annotation in self.dataset['annotations']:
-                for (view, view_ann) in annotation.items():
-                    pass
-
+import src.datasets.transforms as T
 
 
 # *********************************************************************************************************************
-
 class CocoDetection(torchvision.datasets.CocoDetection):
+    # targets新添加的key
     fields = ["labels", "area", "iscrowd", "boxes", "track_ids", "masks"]
+
+    # fields = ["area", "bbox"]
 
     def __init__(self, img_folder, ann_file, transforms, norm_transforms,
                  return_masks=False, overflow_boxes=False, remove_no_obj_imgs=True,
@@ -54,6 +23,8 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         super(CocoDetection, self).__init__(img_folder, ann_file)
         self._transforms = transforms
         self._norm_transforms = norm_transforms
+        # 数据处理，给targets添加键值
+        self.prepare = ConvertCocoPolysToMask(return_masks, overflow_boxes)
 
         annos_image_ids = [ann['image_id'] for ann in self.coco.loadAnns(self.coco.getAnnIds())]
         if remove_no_obj_imgs:
@@ -61,7 +32,6 @@ class CocoDetection(torchvision.datasets.CocoDetection):
 
         if min_num_objects:
             counter = Counter(annos_image_ids)
-
             self.ids = [i for i in self.ids if counter[i] >= min_num_objects]
 
         self._prev_frame = prev_frame
@@ -75,23 +45,29 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         if random_state is not None:
             curr_random_state = {
                 'random': random.getstate(),
-                'torch': torch.random.get_rng_state()}
+                'torch': torch.random.get_rng_state()
+            }
+
             random.setstate(random_state['random'])
             torch.random.set_rng_state(random_state['torch'])
 
         img, target = super(CocoDetection, self).__getitem__(image_id)
         image_id = self.ids[image_id]
-        target = {'image_id': image_id,
-                  'annotations': target}
+        target = {'image_id': image_id, 'annotations': target}
         img, target = self.prepare(img, target)
 
         if 'track_ids' not in target:
             target['track_ids'] = torch.arange(len(target['labels']))
 
+        # for filed in self.fields:
+        #     if filed not in target:
+        #         target[filed] = target['annotations'][0][filed]
+
         if self._transforms is not None:
             img, target = self._transforms(img, target)
 
-        # ignore
+        # ignore,
+        # fields = ["labels", "area", "iscrowd", "boxes", "track_ids", "masks"]
         ignore = target.pop("ignore").bool()
         for field in self.fields:
             if field in target:
@@ -102,8 +78,9 @@ class CocoDetection(torchvision.datasets.CocoDetection):
             random.setstate(curr_random_state['random'])
             torch.random.set_rng_state(curr_random_state['torch'])
 
-        if random_jitter:
+        if random_jitter:  # 随机裁剪
             img, target = self._add_random_jitter(img, target)
+
         img, target = self._norm_transforms(img, target)
 
         return img, target
@@ -128,7 +105,8 @@ class CocoDetection(torchvision.datasets.CocoDetection):
     def __getitem__(self, idx):
         random_state = {
             'random': random.getstate(),
-            'torch': torch.random.get_rng_state()}
+            'torch': torch.random.get_rng_state()
+        }
         img, target = self._getitem_from_id(idx, random_state, random_jitter=False)
 
         if self._prev_frame:
@@ -147,6 +125,106 @@ class CocoDetection(torchvision.datasets.CocoDetection):
 
     def write_result_files(self, *args):
         pass
+
+
+class ConvertCocoPolysToMask(object):
+    def __init__(self, return_masks=False, overflow_boxes=False):
+        self.return_masks = return_masks
+        self.overflow_boxes = overflow_boxes
+
+    def __call__(self, image, target):
+        w, h = image.size
+
+        image_id = target["image_id"]
+        image_id = torch.tensor([image_id])
+
+        anno = target["annotations"]
+
+        anno = [obj for obj in anno if 'iscrowd' not in obj or obj['iscrowd'] == 0]
+
+        boxes = [obj["bbox"] for obj in anno]
+        # guard against no boxes via resizing
+        boxes = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
+        # x,y,w,h --> x,y,x,y
+        boxes[:, 2:] += boxes[:, :2]
+        if not self.overflow_boxes:
+            boxes[:, 0::2].clamp_(min=0, max=w)
+            boxes[:, 1::2].clamp_(min=0, max=h)
+
+        classes = [obj["category_id"] for obj in anno]
+        classes = torch.tensor(classes, dtype=torch.int64)
+
+        if self.return_masks:
+            segmentations = [obj["segmentation"] for obj in anno]
+            masks = convert_coco_poly_to_mask(segmentations, h, w)
+
+        keypoints = None
+        if anno and "keypoints" in anno[0]:
+            keypoints = [obj["keypoints"] for obj in anno]
+            keypoints = torch.as_tensor(keypoints, dtype=torch.float32)
+            num_keypoints = keypoints.shape[0]
+            if num_keypoints:
+                keypoints = keypoints.view(num_keypoints, -1, 3)
+
+        keep = (boxes[:, 3] > boxes[:, 1]) & (boxes[:, 2] > boxes[:, 0])
+
+        boxes = boxes[keep]
+        classes = classes[keep]
+        if self.return_masks:
+            masks = masks[keep]
+        if keypoints is not None:
+            keypoints = keypoints[keep]
+
+        target = {}
+        target["boxes"] = boxes
+        target["labels"] = classes - 1
+
+        if self.return_masks:
+            target["masks"] = masks
+        target["image_id"] = image_id
+        if keypoints is not None:
+            target["keypoints"] = keypoints
+
+        if anno and "track_id" in anno[0]:
+            track_ids = torch.tensor([obj["track_id"] for obj in anno])
+            target["track_ids"] = track_ids[keep]
+        elif not len(boxes):
+            target["track_ids"] = torch.empty(0)
+
+        # for conversion to coco api
+        area = torch.tensor([obj["area"] for obj in anno])
+        iscrowd = torch.tensor([obj["iscrowd"] if "iscrowd" in obj else 0 for obj in anno])
+        ignore = torch.tensor([obj["ignore"] if "ignore" in obj else 0 for obj in anno])
+
+        target["area"] = area[keep]
+        target["iscrowd"] = iscrowd[keep]
+        target["ignore"] = ignore[keep]
+
+        target["orig_size"] = torch.as_tensor([int(h), int(w)])
+        target["size"] = torch.as_tensor([int(h), int(w)])
+
+        return image, target
+
+
+def convert_coco_poly_to_mask(segmentations, height, width):
+    masks = []
+    for polygons in segmentations:
+        if isinstance(polygons, dict):
+            rles = {'size': polygons['size'],
+                    'counts': polygons['counts'].encode(encoding='UTF-8')}
+        else:
+            rles = coco_mask.frPyObjects(polygons, height, width)
+        mask = coco_mask.decode(rles)
+        if len(mask.shape) < 3:
+            mask = mask[..., None]
+        mask = torch.as_tensor(mask, dtype=torch.uint8)
+        mask = mask.any(dim=2)
+        masks.append(mask)
+    if masks:
+        masks = torch.stack(masks, dim=0)
+    else:
+        masks = torch.zeros((0, height, width), dtype=torch.uint8)
+    return masks
 
 
 # *********************************************************************************************************************

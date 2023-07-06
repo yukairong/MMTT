@@ -2,8 +2,8 @@ from argparse import Namespace
 
 from torch.utils.data import Dataset
 
-# from datasets.mot import build_mot_wildTrack
-from datasets.wildtrack import build_wildtrack
+from src.datasets.wildtrack import build_wildtrack
+
 
 def build_dataset(split: str, args: Namespace) -> Dataset:
     """
@@ -12,8 +12,7 @@ def build_dataset(split: str, args: Namespace) -> Dataset:
     :return: 数据集 Dataset
     """
     print(args)
-    if args.dataset == 'mot_wildTrack':
-        # dataset = build_mot_wildTrack(split, args)
+    if args.dataset == 'wildTrack':
         dataset = build_wildtrack(split, args)
     else:
         raise ValueError(f'dataset {args.dataset} not supported')

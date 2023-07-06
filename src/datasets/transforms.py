@@ -9,8 +9,8 @@ import torch
 import torchvision.transforms as T
 import torchvision.transforms.functional as F
 
-from utils.box_ops import box_xyxy_to_cxcywh
-from utils.misc import interpolate
+from src.utils.box_ops import box_xyxy_to_cxcywh
+from src.utils.misc import interpolate
 
 
 def crop(image, target, region, overflow_boxes=False):
@@ -160,8 +160,7 @@ def resize(image, target, size, max_size=None):
     target = target.copy()
     if "boxes" in target:
         boxes = target["boxes"]
-        scaled_boxes = boxes \
-                       * torch.as_tensor([ratio_width, ratio_height, ratio_width, ratio_height])
+        scaled_boxes = boxes * torch.as_tensor([ratio_width, ratio_height, ratio_width, ratio_height])
         target["boxes"] = scaled_boxes
 
     if "area" in target:
@@ -173,8 +172,7 @@ def resize(image, target, size, max_size=None):
     target["size"] = torch.tensor([h, w])
 
     if "masks" in target:
-        target['masks'] = interpolate(
-            target['masks'][:, None].float(), size, mode="nearest")[:, 0] > 0.5
+        target['masks'] = interpolate(target['masks'][:, None].float(), size, mode="nearest")[:, 0] > 0.5
 
     return rescaled_image, target
 
@@ -190,15 +188,13 @@ def pad(image, target, padding):
 
     if "boxes" in target:
         # correct xyxy from left and right paddings
-        target["boxes"] += torch.tensor(
-            [padding[0], padding[1], padding[0], padding[1]])
+        target["boxes"] += torch.tensor([padding[0], padding[1], padding[0], padding[1]])
 
     target["size"] = torch.tensor([h, w])
     if "masks" in target:
         # padding_left, padding_right, padding_top, padding_bottom
-        target['masks'] = torch.nn.functional.pad(
-            target['masks'],
-            (padding[0], padding[2], padding[1], padding[3]))
+        target['masks'] = torch.nn.functional.pad(target['masks'], (padding[0], padding[2], padding[1], padding[3]))
+
     return padded_image, target
 
 
@@ -240,6 +236,7 @@ class RandomSizeCrop:
                 min(img.height, self.max_size[1]))
 
         region = T.RandomCrop.get_params(img, [h, w])
+
         return crop(img, target, region, self.overflow_boxes)
 
 
@@ -263,6 +260,7 @@ class RandomHorizontalFlip:
     def __call__(self, img, target):
         if random.random() < self.p:
             return hflip(img, target)
+
         return img, target
 
 

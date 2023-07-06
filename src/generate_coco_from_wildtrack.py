@@ -1,31 +1,19 @@
 """
 Generates COCO data and annotation structure from WildTrack dataset
 """
-import argparse
-import configparser
-import csv
 import json
 import os
 import shutil
-
-import numpy as np
-import pycocotools.mask as rletools
-import skimage.io as io
-import torch
-from matplotlib import pyplot as plt
-from pycocotools.coco import COCO
-from scipy.optimize import linear_sum_assignment
-from torchvision.ops.boxes import box_iou
 
 from utils.dataset_utils import parse_json_file, xyxy_convert_to_xywh
 
 # 存储数据集中的seqs信息
 DATSET_SEQS_INFO = {
-    "WildTrack" : {"img_width": 1920, "img_height": 1080, "seq_length": 401}
+    "WildTrack": {"img_width": 1920, "img_height": 1080, "seq_length": 401}
 }
 
-def generate_coco_from_wildtrack(data_root=None, split_name=None,
-                                 seqs_names=None, frame_range=None):
+
+def generate_coco_from_wildtrack(data_root=None, split_name=None, seqs_names=None, frame_range=None):
     """
     用于将WildTrack数据转换成COCO格式的数据
     :param data_root: WildTrack数据集的保存路径
@@ -102,7 +90,7 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
         print(f"{seq}: {len(seq_list_dir)}/{seq_length}")
         seq_length = len(seq_list_dir)
 
-        first_frame_image_id = -1   # 记录第一帧的图片id
+        first_frame_image_id = -1  # 记录第一帧的图片id
         for i, img in enumerate(sorted(seq_list_dir)):
 
             # 标记第一帧的图像id
@@ -112,13 +100,13 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
             assert first_frame_image_id >= 0, "没有找到第一帧图片id"
 
             annotations['images'].append({
-                "file_name": f"{seq}_{img}",    # 图片的文件信息名称
-                "height": img_height,   # 图片高度
-                "width": img_width, # 图片宽度
-                "id": img_id,   # 图片id
+                "file_name": f"{seq}_{img}",  # 图片的文件信息名称
+                "height": img_height,  # 图片高度
+                "width": img_width,  # 图片宽度
+                "id": img_id,  # 图片id
                 "frame_id": i,  # 帧数
-                "seq_length": seq_length,   # 序列的总长度(帧总数)
-                "first_frame_image_id": first_frame_image_id,   # 第1帧图像的id
+                "seq_length": seq_length,  # 序列的总长度(帧总数)
+                "first_frame_image_id": first_frame_image_id,  # 第1帧图像的id
                 "view_id": view_id  # 视角的id
             })
 
@@ -161,7 +149,7 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
             print(f"{json_file} 该标注JSON文件不存在,已跳过")
             continue
 
-        json_res = parse_json_file(json_file)   # JSON数据详情
+        json_res = parse_json_file(json_file)  # JSON数据详情
 
         # 对同一时刻,对每个视角下不同的人的标注信息进行便利
         for res in json_res:
@@ -170,7 +158,7 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
             view_annotation_data_list = res["views"]  # 各个视角的标注信息
 
             for view_annotation_data in view_annotation_data_list:
-                view_id = view_annotation_data["viewNum"]   # 当前视角id
+                view_id = view_annotation_data["viewNum"]  # 当前视角id
                 xmax = view_annotation_data["xmax"]
                 xmin = view_annotation_data["xmin"]
                 ymax = view_annotation_data["ymax"]
@@ -181,12 +169,12 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
 
                 area = bbox[2] * bbox[3]
                 visibility = 1 if area != 0 else 0  # 有框说明可见,反之不可见
-                frame_id = seq_frame_id # 记录当前的序列帧id
+                frame_id = seq_frame_id  # 记录当前的序列帧id
                 image_id = img_file_name_to_id.get(f"{seqs_names[view_id]}_{annotation_data.replace('.json', '.png')}")
                 if image_id is None:
                     continue
 
-                track_id = personId # 轨迹与每个人的id相一致
+                track_id = personId  # 轨迹与每个人的id相一致
 
                 annotation = {
                     "id": annotation_id,
@@ -248,7 +236,7 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
 
 if __name__ == '__main__':
     # parser = argparse.ArgumentParser(description="Generate COCO from WildTrack")
-    data_root = r"D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset"
+    data_root = r"D:\dataset\MOT\Wildtrack_dataset"
     seqs_names = ["C1", "C2", "C3", "C4", "C5", "C6", "C7"]
     generate_coco_from_wildtrack(
         data_root=data_root, split_name="wildtrack_train_coco",

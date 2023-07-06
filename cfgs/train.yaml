@@ -1,7 +1,7 @@
 # ###### MODEL CONFIG #####
 lr: 0.0002
 output_dir: './output'
-device: 'cuda:0'
+device: 'cuda'
 seed: 20230715
 distributed: False
 num_workers: 8
@@ -10,9 +10,11 @@ num_workers: 8
 # The file name where WildTrack Dataset convert to COCO type to save
 train_split: wildtrack_train_coco
 val_split: Wildtrack_train_cross_val_frame_0_5_to_1_0_coco
-dataset: 'mot_wildTrack'
-#mot_path_train: 'D:\datasets\MOT\Wildtrack_dataset\wildtrack_train_coco' # train dataset root (fancy)
-wildtrack_path_train: 'D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset'  # train dataset root (kongcheng)
+dataset: 'wildTrack'
+
+# wildtrack_path_train: 'D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset'  # train dataset root (kongcheng)
+wildtrack_path_train: 'D:\dataset\MOT\Wildtrack_dataset'  # train dataset root (fancy)
+
 mot_path_val: 'D:\datasets\MOT\Wildtrack_dataset\wildtrack_val_coco' # valid dataset root
 track_prev_frame_rnd_augs: 0.01 # crop augment
 track_prev_frame_range: 5 #  Range of possible random previous frames
@@ -29,5 +31,6 @@ img_transform:
   val_width: 800
 
 overflow_boxes: True
-
+distributed: False
+batch_size: 8
 

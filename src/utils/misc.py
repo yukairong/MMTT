@@ -154,3 +154,15 @@ class NestedTensor(object):
             tensor = tensor[:, :w_index[0], :]
 
         return tensor
+
+
+# *********************************************************************************************************************
+def nested_dict_to_device(dictionary, device):
+    output = {}
+    if isinstance(dictionary, dict):
+        for key, value in dictionary.items():
+            output[key] = nested_dict_to_device(value, device)
+
+        return output
+
+    return dictionary.to(device)
