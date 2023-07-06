@@ -5,6 +5,9 @@ device: 'cuda:0'
 seed: 20230715
 distributed: False
 num_workers: 8
+hidden_dim: 256 # Size of the embeddings (dimension of the transformer)
+position_embedding: sine  # Type of positional embedding to use on top of the image features. ('sine', 'learned')
+
 
 # ###### DATASET CONFIG ######
 # The file name where WildTrack Dataset convert to COCO type to save
@@ -29,5 +32,9 @@ img_transform:
   val_width: 800
 
 overflow_boxes: True
+
+# only for vanilla DETR
+multi_frame_attention: false
+multi_frame_encoding: true
 
 
