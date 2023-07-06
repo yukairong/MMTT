@@ -11,6 +11,8 @@ from src.datasets import build_dataset
 from src.utils import misc
 from src.utils.misc import nested_dict_to_namespace
 
+from src.models import build_model
+
 # 创建一条实验记录
 ex = sacred.Experiment('train')
 # 添加运行需要的配置文件 yaml格式
@@ -42,7 +44,7 @@ def train(args: Namespace) -> None:
 
     # TODO 构建模型 优化器 ....
     # ******************************* 构建模型 **************************************************************************
-    # build_model
+    build_model(args)
 
     # ****************************** 构建数据集 **************************************************************************
     dataset_train = build_dataset(split='train', args=args)

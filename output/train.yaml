@@ -2,15 +2,20 @@ batch_size: 8
 dataset: wildTrack
 device: cuda
 distributed: false
+hidden_dim: 256
 img_transform: !!python/object:argparse.Namespace
   max_size: 1333
   val_width: 800
 lr: 0.0002
+lr_backbone: 2.0e-05
 masks: false
 mot_path_val: D:\datasets\MOT\Wildtrack_dataset\wildtrack_val_coco
+multi_frame_attention: false
+num_feature_levels: 4
 num_workers: 8
 output_dir: ./output
 overflow_boxes: true
+position_embedding: sine
 seed: 20230715
 track_prev_frame_range: 5
 track_prev_frame_rnd_augs: 1.0
@@ -18,4 +23,4 @@ track_prev_prev_frame: false
 tracking: false
 train_split: wildtrack_train_coco
 val_split: Wildtrack_train_cross_val_frame_0_5_to_1_0_coco
-wildtrack_path_train: D:\dataset\MOT\Wildtrack_dataset
+wildtrack_path_train: D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset

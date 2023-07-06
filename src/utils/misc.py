@@ -4,6 +4,7 @@ from typing import List, Optional
 import torch
 import torchvision
 from torch import Tensor
+import torch.distributed as dist
 
 
 # *********************************************************************************************************************
@@ -154,6 +155,21 @@ class NestedTensor(object):
             tensor = tensor[:, :w_index[0], :]
 
         return tensor
+
+def is_dist_avail_and_initialized():
+    if not dist.is_available():
+        return False
+    if not dist.is_initialized():
+        return False
+    return True
+
+def get_rank():
+    if not is_dist_avail_and_initialized():
+        return 0
+    return dist.get_rank()
+
+def is_main_process():
+    return get_rank() == 0
 
 
 # *********************************************************************************************************************
