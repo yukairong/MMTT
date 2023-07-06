@@ -51,6 +51,4 @@ def build_wildtrack(image_set, args):
         prev_frame_rnd_augs=prev_frame_rnd_augs,
         prev_prev_frame=args.track_prev_prev_frame
     )
-    # print("data:", dataset.coco.imgs)
-    print("sequence:", dataset.sequence)
 
