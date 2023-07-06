@@ -11,6 +11,15 @@ position_embedding: "sine"
 backbone: resnet50  # Name of the convolutional backbone to use. ('resnet50', 'resnet101')
 dilation: False # If true, we replace stride with dilation in the last convolutional block (DC5)
 
+# ###### MATCHER CONFIG #####
+set_cost_class: 1.0 # Class coefficient in the matching cost
+set_cost_bbox: 5.0  # L1 box coefficient in the matching cost
+set_cost_giou: 2.0  # giou box coefficient in the matching cost
+# Relative classification weight of the no-object class
+focal_loss: True
+focal_alpha: 0.25
+focal_gamma: 2
+
 # ###### DATASET CONFIG ######
 # The file name where WildTrack Dataset convert to COCO type to save
 train_split: wildtrack_train_coco

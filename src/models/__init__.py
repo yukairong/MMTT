@@ -1,6 +1,7 @@
 import torch
 
 from models.backbone import build_backbone
+from models.matcher import build_matcher
 
 def build_model(args):
     """
@@ -17,4 +18,5 @@ def build_model(args):
 
     # 构建backbone以及 matcher
     backbone = build_backbone(args)
+    matcher = build_matcher(args)
 
