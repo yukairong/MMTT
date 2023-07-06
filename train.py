@@ -11,12 +11,10 @@ from src.datasets import build_dataset
 from src.utils import misc
 from src.utils.misc import nested_dict_to_namespace
 
-from models import build_model
-
 # 创建一条实验记录
 ex = sacred.Experiment('train')
 # 添加运行需要的配置文件 yaml格式
-ex.add_config('../cfgs/train.yaml')
+ex.add_config('cfgs/train.yaml')
 
 
 # 打印当前运行的参数和对应的值
@@ -44,7 +42,7 @@ def train(args: Namespace) -> None:
 
     # TODO 构建模型 优化器 ....
     # ******************************* 构建模型 **************************************************************************
-    build_model(args)
+    # build_model
 
     # ****************************** 构建数据集 **************************************************************************
     dataset_train = build_dataset(split='train', args=args)
