@@ -205,7 +205,9 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None, seqs_names=Non
                 seq_annotations_per_frame[frame_id][view_id].append(annotation)
 
                 annotation_id += 1
-    # TODO: 根据view_id进行排序
+
+    # 保证视角和时间信息一致，进行多级排序
+    seq_annotations = sorted(seq_annotations, key=lambda x: (x["view_id"], x["id"]), reverse=False)
     # annotations['annotations'].append(seq_annotations)
     annotations['annotations'].extend(seq_annotations)
 
