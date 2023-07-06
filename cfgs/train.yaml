@@ -8,6 +8,8 @@ num_workers: 8
 multi_frame_attention: False
 hidden_dim: 256
 position_embedding: "sine"
+backbone: resnet50  # Name of the convolutional backbone to use. ('resnet50', 'resnet101')
+dilation: False # If true, we replace stride with dilation in the last convolutional block (DC5)
 
 # ###### DATASET CONFIG ######
 # The file name where WildTrack Dataset convert to COCO type to save
@@ -34,5 +36,5 @@ img_transform:
   val_width: 800
 
 overflow_boxes: True
-batch_size: 8
+batch_size: 4
 

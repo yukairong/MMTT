@@ -56,7 +56,7 @@ class BackboneBase(nn.Module):
         for name, parameter in backbone.named_parameters():
             # backbone非训练状态,或是layer2,layer3,layer4不在backbone中, 将参数锁定
             if (not train_backbone or "layer2" not in name and "layer3" not in name and "layer4" not in name):
-                parameter.requires_grad(False)
+                parameter.requires_grad_(False)
 
         if return_interm_layers:
             return_layers = {"layer1": "0", "layer2": "1", "layer3": "2", "layer4": "3"}
@@ -87,8 +87,11 @@ class Backbone(BackboneBase):
     def __init__(self, name: str, train_backbone: bool, return_interm_layers: bool, dilation: bool):
 
         norm_layer = FrozenBatchNorm2d
+        # 使用getattr()方法获取torchvision.models模块中的函数,函数名称由变量name来指定
         backbone = getattr(torchvision.models, name)(
+            # 用于指定是否在模型中使用dilation来替换stride。某个元素为True，则表示将使用dilation来代替对应层中的stride
             replace_stride_with_dilation=[False, False, dilation],
+            # is_main_process()用于指示当前进程是否为主进程，如果当前进程是主进程，则会加载预训练模型，否则不会加载
             pretrained=is_main_process(), norm_layer=norm_layer
         )
         super().__init__(backbone, train_backbone, return_interm_layers)
@@ -111,4 +114,9 @@ def build_backbone(args):
     train_backbone = args.lr_backbone > 0
     return_interm_layers = args.masks or (args.num_feature_levels > 1)  # 是否取出中间几层特征图
 
-    # backbone = Backbone(args)
+    backbone = Backbone(args.backbone,
+                        train_backbone,
+                        return_interm_layers,
+                        args.dilation)
+
+    print(backbone)

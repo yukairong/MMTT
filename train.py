@@ -48,7 +48,7 @@ def train(args: Namespace) -> None:
 
     # ****************************** 构建数据集 **************************************************************************
     dataset_train = build_dataset(split='train', args=args)
-    img, target = dataset_train.__getitem__(0)
+    img, target = dataset_train[0]
     print('\n.......... for test .........\n', f'img.shape = {img.shape}, 这张图片的目标数 = ')
 
     # dataset_val = build_dataset(split='val', args=args)
