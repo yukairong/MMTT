@@ -36,5 +36,5 @@ img_transform:
   val_width: 800
 
 overflow_boxes: True
-batch_size: 4
+batch_size: 1
 

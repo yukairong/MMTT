@@ -100,9 +100,25 @@ class Backbone(BackboneBase):
             # 感受野扩大一倍,步长相应缩减一半,确保输出一致
             self.strides[-1] = self.strides[-1] // 2
 
+class Joiner(nn.Sequential):
+    def __init__(self, backbone, position_embedding):
+        super().__init__(backbone, position_embedding)
+        # 步长, 通道数
+        self.strides = backbone.strides # [4, 8, 16, 32]
+        self.num_channels = backbone.num_channels   # [256, 512, 1024, 2048]
 
+    def forward(self, tensor_list: NestedTensor):
+        # 调用backbone模型
+        xs = self[0](tensor_list)
+        out: List[NestedTensor] = []
+        pos = []
 
+        for x in xs.values():
+            out.append(x)   # 将不同尺度的特征图存入out中
+            # position encoding
+            pos.append(self[1](x).to(x.tensors.dtype))  # 将不同尺度的特征图的位置编码信息存入pos中
 
+        return out, pos
 
 def build_backbone(args):
     """
@@ -119,4 +135,6 @@ def build_backbone(args):
                         return_interm_layers,
                         args.dilation)
 
-    print(backbone)
+    model = Joiner(backbone, position_embedding)
+
+    return model
