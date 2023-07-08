@@ -10,6 +10,7 @@ hidden_dim: 256
 position_embedding: "sine"
 backbone: resnet50  # Name of the convolutional backbone to use. ('resnet50', 'resnet101')
 dilation: False # If true, we replace stride with dilation in the last convolutional block (DC5)
+num_queries: 300  # Number of object queries
 
 # ###### MATCHER CONFIG #####
 set_cost_class: 1.0 # Class coefficient in the matching cost
@@ -19,6 +20,10 @@ set_cost_giou: 2.0  # giou box coefficient in the matching cost
 focal_loss: True
 focal_alpha: 0.25
 focal_gamma: 2
+
+# ###### LOSS CONFIG ######
+aux_loss: True
+
 
 # ###### DATASET CONFIG ######
 # The file name where WildTrack Dataset convert to COCO type to save
@@ -31,8 +36,12 @@ wildtrack_path_train: 'D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset'  # 
 mot_path_val: 'D:\datasets\MOT\Wildtrack_dataset\wildtrack_val_coco' # valid dataset root
 track_prev_frame_rnd_augs: 1.0 # crop augment
 track_prev_frame_range: 5 #  Range of possible random previous frames
-# Tracking
+
+# ###### Tracking CONFIG ######
 tracking: False
+track_query_false_positive_prob: 0.1
+track_query_false_negative_prob: 0.4
+
 # Segmentation
 masks: False
 # Range of possible random previous frames
@@ -46,4 +55,7 @@ img_transform:
 
 overflow_boxes: True
 batch_size: 1
+
+# ####### DEFORMABLE CONFIG ######
+deformable: True
 
