@@ -1,21 +1,9 @@
 """
 Generates COCO data and annotation structure from WildTrack dataset
 """
-import argparse
-import configparser
-import csv
 import json
 import os
 import shutil
-
-import numpy as np
-import pycocotools.mask as rletools
-import skimage.io as io
-import torch
-from matplotlib import pyplot as plt
-from pycocotools.coco import COCO
-from scipy.optimize import linear_sum_assignment
-from torchvision.ops.boxes import box_iou
 
 from utils.dataset_utils import parse_json_file, xyxy_convert_to_xywh
 
