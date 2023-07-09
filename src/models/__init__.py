@@ -20,3 +20,23 @@ def build_model(args):
     backbone = build_backbone(args)
     matcher = build_matcher(args)
 
+    # version 1
+    mmtt_v1_kwargs = {
+        "backbone": backbone,
+        "num_classes": num_classes - 1 if args.focal_loss else num_classes,
+        "num_queries": args.num_queries,
+        "aux_loss": args.aux_loss,
+        "overflow_boxes": args.overflow_boxes,
+
+        # track part
+        "track_query_false_positive_prob": args.track_query_false_positive_prob,
+        "track_query_false_negative_prob": args.track_query_false_negative_prob,
+        "matcher": matcher,
+        "backprop_prev_frame": args.track_backprop_prev_frame,
+    }
+
+    # TODO: build deformable transformer
+    if args.deformable:
+        transformer = None
+
+
