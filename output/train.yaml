@@ -2,10 +2,14 @@ aux_loss: true
 backbone: resnet50
 batch_size: 1
 dataset: wildTrack
+dec_layers: 6
 deformable: true
 device: cuda
 dilation: false
+dim_feedforward: 1024
 distributed: false
+dropout: 0.1
+enc_layers: 6
 focal_alpha: 0.25
 focal_gamma: 2
 focal_loss: true
@@ -18,12 +22,14 @@ lr_backbone: 2.0e-05
 masks: false
 mot_path_val: D:\datasets\MOT\Wildtrack_dataset\wildtrack_val_coco
 multi_frame_attention: false
+nheads: 8
 num_feature_levels: 4
 num_queries: 300
 num_workers: 8
 output_dir: ./output
 overflow_boxes: true
 position_embedding: sine
+pre_norm: false
 seed: 20230715
 set_cost_bbox: 5.0
 set_cost_class: 1.0
@@ -36,4 +42,4 @@ track_query_false_positive_prob: 0.1
 tracking: false
 train_split: wildtrack_train_coco
 val_split: Wildtrack_train_cross_val_frame_0_5_to_1_0_coco
-wildtrack_path_train: D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset
+wildtrack_path_train: D:\dataset\MOT\Wildtrack_dataset

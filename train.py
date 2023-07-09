@@ -7,11 +7,11 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
-from datasets import build_dataset
-from utils import misc
-from utils.misc import nested_dict_to_namespace
-
-from models import build_model
+from src.datasets import build_dataset
+from src.models import build_model
+from src.models.transformer import test
+from src.utils import misc
+from src.utils.misc import nested_dict_to_namespace
 
 # 创建一条实验记录
 ex = sacred.Experiment('train')
@@ -86,6 +86,7 @@ def train(args: Namespace) -> None:
     for i, (samples, targets) in enumerate(data_loader_train):
         samples = samples.to(device)
         targets = [misc.nested_dict_to_device(t, device) for t in targets]
+        test(args, samples)
         break
 
 

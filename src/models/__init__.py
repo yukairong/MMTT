@@ -2,6 +2,8 @@ import torch
 
 from models.backbone import build_backbone
 from models.matcher import build_matcher
+from models.transformer import build_transformer
+
 
 def build_model(args):
     """
@@ -20,6 +22,9 @@ def build_model(args):
     backbone = build_backbone(args)
     matcher = build_matcher(args)
 
+    transformer = build_transformer(args)
+
+    return matcher
     # version 1
     mmtt_v1_kwargs = {
         "backbone": backbone,
@@ -38,5 +43,3 @@ def build_model(args):
     # TODO: build deformable transformer
     if args.deformable:
         transformer = None
-
-
