@@ -2,13 +2,6 @@ import csv
 import os
 import random
 from pathlib import Path
-import torch
-
-from datasets.coco import CocoDetection, make_coco_transforms
-import csv
-import os
-import random
-from pathlib import Path
 
 import torch
 

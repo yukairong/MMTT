@@ -7,11 +7,11 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
-from src.datasets import build_dataset
-from src.utils import misc
-from src.utils.misc import nested_dict_to_namespace
+from datasets import build_dataset
+from utils import misc
+from utils.misc import nested_dict_to_namespace
 
-from src.models import build_model
+from models import build_model
 
 # 创建一条实验记录
 ex = sacred.Experiment('train')

@@ -81,7 +81,7 @@ class HungarianMatcher(nn.Module):
             cost_class = -out_prob[:, tgt_ids]
 
         # Compute the L1 cost between boxes
-        cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
+        cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)    # (batch_size * num_queries, len(targets)) targets - 所有目标框的数量
 
         # Compute the giou cost between boxes
         # 将坐标(cx, cy, w, h) -> (x1, y1, x2, y2), 计算GIOU
