@@ -38,7 +38,7 @@ track_prev_frame_rnd_augs: 1.0 # crop augment
 track_prev_frame_range: 5 #  Range of possible random previous frames
 
 # ###### Tracking CONFIG ######
-tracking: False
+tracking: True
 track_query_false_positive_prob: 0.1
 track_query_false_negative_prob: 0.4
 
@@ -61,13 +61,15 @@ batch_size: 1
 deformable: True
 two_stage: False
 multi_frame_attention_separate_encoder: True
-
+with_box_refine: False
+merge_frame_features: False
 dropout: 0.1
 nheads: 8
 dim_feedforward: 1024
 enc_layers: 6
 dec_layers: 6
 pre_norm: False
+
 # Number of object queries
 dec_n_points: 4
 enc_n_points: 4
