@@ -272,3 +272,42 @@ class DeformableDETR(DETR):
                 for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
 
 
+class DeformablePostProcess(PostProcess):
+    """
+    This module converts the model's output into the format expected by the coco api
+    """
+    @torch.no_grad()
+    def forward(self, outputs, target_sizes, results_mask=None):
+        """ Perform the computation
+        Parameters:
+            outputs: raw outputs of the model
+            target_sizes: tensor of dimension [batch_size x 2] containing the size of each images of the batch
+                          For evaluation, this must be the original image size (before any data augmentation)
+                          For visualization, this should be the image size after data augment, but before padding
+        """
+        out_logits, out_bbox = outputs["pred_logits"], outputs["pred_boxes"]
+
+        assert len(out_logits) == len(target_sizes)
+        assert target_sizes.shape[1] == 2
+
+        prob = out_logits.sigmoid()
+
+        scores, labels = prob.max(-1)
+        boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
+
+        # from relative [0,1] to absolute [0, height] coordinates
+        img_h, img_w = target_sizes.unbind(1)
+        scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
+        boxes = boxes * scale_fct[:, None, :]
+
+        results = [
+            {'scores': s, 'scores_no_object': 1 - s, 'labels': l, 'boxes': b}
+            for s, l, b in zip(scores, labels, boxes)
+        ]
+
+        if results_mask is not None:
+            for i, mask in enumerate(results_mask):
+                for k, v in results[i].items():
+                    results[i][k] = v[mask]
+
+        return results
