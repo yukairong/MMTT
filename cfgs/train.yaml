@@ -23,6 +23,10 @@ focal_gamma: 2
 
 # ###### LOSS CONFIG ######
 aux_loss: True
+eos_coef: 0.1
+track_query_false_positive_eos_weight: True
+
+
 
 
 # ###### DATASET CONFIG ######
