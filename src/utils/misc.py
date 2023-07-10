@@ -184,6 +184,12 @@ def nested_dict_to_device(dictionary, device):
     return dictionary.to(device)
 
 def inverse_sigmoid(x, eps=1e-5):
+    """
+    sigmoid反归一化
+    :param x:
+    :param eps:
+    :return:
+    """
     x = x.clamp(min=0, max=1)
     x1 = x.clamp(min=eps)
     x2 = (1 - x).clamp(min=eps)
