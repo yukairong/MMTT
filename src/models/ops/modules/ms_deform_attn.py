@@ -27,7 +27,7 @@ class MSDeformAttn(nn.Module):
         self.im2col_step = im2col_step
 
         self.d_model = d_model
-        self.n_level = n_levels
+        self.n_levels = n_levels
         self.n_heads = n_heads
         self.n_points = n_points
 

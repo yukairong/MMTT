@@ -46,6 +46,7 @@ track_query_false_negative_prob: 0.4
 masks: False
 # Range of possible random previous frames
 track_prev_prev_frame: False
+track_backprop_prev_frame: False
 lr_backbone: 0.00002  # backbone train lr
 num_feature_levels: 4 # Number of feature levels the encoder processes from the backbone
 
@@ -56,15 +57,17 @@ img_transform:
 overflow_boxes: True
 batch_size: 1
 
-# ####### DEFORMABLE CONFIG ######
+# ####### DEFORMABLE / DERT TRANSFORMER CONFIG ######
 deformable: True
+two_stage: False
+multi_frame_attention_separate_encoder: True
 
-
-
-# ############# DETR-transformer CONFIG ###########
 dropout: 0.1
 nheads: 8
 dim_feedforward: 1024
 enc_layers: 6
 dec_layers: 6
 pre_norm: False
+# Number of object queries
+dec_n_points: 4
+enc_n_points: 4

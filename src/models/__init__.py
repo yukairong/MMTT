@@ -3,6 +3,7 @@ import torch
 from models.backbone import build_backbone
 from models.matcher import build_matcher
 from models.transformer import build_transformer
+from models.deformable_transformer import build_deformable_transformer
 
 
 def build_model(args):
@@ -24,7 +25,6 @@ def build_model(args):
 
     transformer = build_transformer(args)
 
-    return matcher
     # version 1
     mmtt_v1_kwargs = {
         "backbone": backbone,
@@ -40,6 +40,7 @@ def build_model(args):
         "backprop_prev_frame": args.track_backprop_prev_frame,
     }
 
-    # TODO: build deformable transformer
     if args.deformable:
-        transformer = None
+        transformer = build_deformable_transformer(args)
+        print("Deformable Transformer Model: ")
+        print(transformer)
