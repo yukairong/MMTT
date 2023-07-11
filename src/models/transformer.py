@@ -23,7 +23,7 @@ def _get_activation_fn(activation):
         return F.gelu
     if activation == "glu":
         return F.glu
-    raise RuntimeError(F"activation should be relu/gelu, not {activation}.")
+    raise RuntimeError(f"activation should be relu/gelu, not {activation}.")
 
 
 class TransformerEncoderLayer(nn.Module):
