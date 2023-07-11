@@ -12,6 +12,9 @@ backbone: resnet50  # Name of the convolutional backbone to use. ('resnet50', 'r
 dilation: False # If true, we replace stride with dilation in the last convolutional block (DC5)
 num_queries: 300  # Number of object queries
 
+start_epoch: 1
+epochs: 50
+
 # ###### MATCHER CONFIG #####
 set_cost_class: 1.0 # Class coefficient in the matching cost
 set_cost_bbox: 5.0  # L1 box coefficient in the matching cost

@@ -1,4 +1,5 @@
 import os
+import time
 from argparse import Namespace
 from pathlib import Path
 
@@ -44,7 +45,8 @@ def train(args: Namespace) -> None:
 
     # TODO 构建模型 优化器 ....
     # ******************************* 构建模型 **************************************************************************
-    build_model(args)
+    model, criterion, postprocessors = build_model(args)
+    model.to(device)
 
     # ****************************** 构建数据集 **************************************************************************
     dataset_train = build_dataset(split='train', args=args)
@@ -82,6 +84,14 @@ def train(args: Namespace) -> None:
 
     # ****************************** 开始训练 **************************************************************************
     print('\n........start training.....\n')
+    start_time = time.time()
+
+    for epoch in range(args.start_epoch, args.epochs + 1):
+        # Train
+        if args.distributed:
+            pass
+
+        # TODO: 训练
 
     for i, (samples, targets) in enumerate(data_loader_train):
         samples = samples.to(device)
