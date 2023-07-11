@@ -1,6 +1,9 @@
 from argparse import Namespace
 
-from torch.utils.data import Dataset
+from pycocotools.coco import COCO
+
+from torch.utils.data import Dataset, Subset
+from torchvision.datasets import CocoDetection
 
 from src.datasets.wildtrack import build_wildtrack
 
@@ -18,3 +21,19 @@ def build_dataset(split: str, args: Namespace) -> Dataset:
         raise ValueError(f'dataset {args.dataset} not supported')
 
     return dataset
+
+
+def get_coco_api_from_dataset(dataset: Subset) -> COCO:
+    """
+    Return COCO class from PyTorch dataset for evaluation with COCO eval.
+    :param dataset:
+    :return:
+    """
+    for _ in range(10):
+        if isinstance(dataset, Subset):
+            dataset = dataset.dataset
+
+    if not isinstance(dataset, CocoDetection):
+        raise NotImplementedError
+
+    return dataset.coco
