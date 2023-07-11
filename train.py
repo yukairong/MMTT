@@ -8,6 +8,7 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
+from src.engine import train_one_epoch
 from src.datasets import build_dataset
 from src.models import build_model
 from src.models.transformer import test
@@ -47,6 +48,38 @@ def train(args: Namespace) -> None:
     # ******************************* 构建模型 **************************************************************************
     model, criterion, postprocessors = build_model(args)
     model.to(device)
+
+    # 计算模型参数总量
+    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("NUM TRAINABLE MODEL PARAMS:", n_parameters)
+
+    def match_name_keywords(n, name_keywords):
+        out = False
+        for b in name_keywords:
+            if b in n:
+                out = True
+                break
+        return out
+
+    param_dicts = [
+        {"params": [p for n, p in model.named_parameters()
+                    if not match_name_keywords(n, args.lr_backbone_names + args.lr_linear_proj_names +
+                                               ['layers_track_attention']) and p.requires_grad], "lr": args.lr, },
+
+        {"params": [p for n, p in model.named_parameters()
+                    if match_name_keywords(n, args.lr_backbone_names) and p.requires_grad], "lr": args.lr_backbone},
+
+        {"params": [p for n, p in model.named_parameters()
+                    if match_name_keywords(n, args.lr_linear_proj_names) and p.requires_grad],
+         "lr": args.lr * args.lr_linear_proj_mult}
+    ]
+
+    if args.track_attention:
+        param_dicts.append({
+            "params": [p for n, p in model.named_parameters()
+                       if match_name_keywords(n, ['layers_track_attention']) and p.requires_grad], "lr": args.lr_track})
+
+    optimizer = torch.optim.AdamW(param_dicts, lr=args.lr, weight_decay=args.weight_decay)
 
     # ****************************** 构建数据集 **************************************************************************
     dataset_train = build_dataset(split='train', args=args)
@@ -91,13 +124,13 @@ def train(args: Namespace) -> None:
         if args.distributed:
             pass
 
-        # TODO: 训练
+        train_one_epoch(model, criterion, postprocessors, data_loader_train, optimizer, device, epoch, args)
 
-    for i, (samples, targets) in enumerate(data_loader_train):
-        samples = samples.to(device)
-        targets = [misc.nested_dict_to_device(t, device) for t in targets]
-        test(args, samples)
-        break
+    # for i, (samples, targets) in enumerate(data_loader_train):
+    #     samples = samples.to(device)
+    #     targets = [misc.nested_dict_to_device(t, device) for t in targets]
+    #     test(args, samples)
+    #     break
 
 
 if __name__ == '__main__':
