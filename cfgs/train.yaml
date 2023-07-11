@@ -15,6 +15,8 @@ num_queries: 300  # Number of object queries
 start_epoch: 1
 epochs: 50
 
+clip_max_norm: 0.1  # gradient clipping max norm
+
 # ###### MATCHER CONFIG #####
 set_cost_class: 1.0 # Class coefficient in the matching cost
 set_cost_bbox: 5.0  # L1 box coefficient in the matching cost
@@ -80,3 +82,7 @@ pre_norm: False
 # Number of object queries
 dec_n_points: 4
 enc_n_points: 4
+
+# ######## VISDOM PARAMS ########
+vis_and_log_interval: 1 # print data frequency
+debug: False
