@@ -5,8 +5,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from utils import box_ops
-from utils.misc import NestedTensor, inverse_sigmoid, nested_tensor_from_tensor_list
+from src.utils import box_ops
+from src.utils.misc import NestedTensor, inverse_sigmoid, nested_tensor_from_tensor_list
 from models.detr import DETR, PostProcess
 
 def _get_clones(module, N):
