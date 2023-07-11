@@ -5,6 +5,9 @@ from models.matcher import build_matcher
 from models.transformer import build_transformer
 from models.deformable_transformer import build_deformable_transformer
 
+from models.detr import DETR, PostProcess
+from models.detr_tracking import DeformableDETRTracking, DETRTracking
+from models.deformable_detr import DeformableDETR, DeformablePostProcess
 
 def build_model(args):
     """
@@ -37,11 +40,45 @@ def build_model(args):
         "backprop_prev_frame": args.track_backprop_prev_frame,
     }
 
-    transformer = build_transformer(args)
     if args.deformable:
         transformer = build_deformable_transformer(args)
-        print("Deformable Transformer Model: ")
-        print(transformer)
+
+        mmtt_v1_kwargs["transformer"] = transformer
+        mmtt_v1_kwargs["num_feature_levels"] = args.num_feature_levels
+        mmtt_v1_kwargs["with_box_refine"] = args.with_box_refine
+        mmtt_v1_kwargs["two_stage"] = args.two_stage
+        mmtt_v1_kwargs["multi_frame_attention"] = args.multi_frame_attention
+        mmtt_v1_kwargs["multi_frame_encoding"] = args.multi_frame_encoding
+        mmtt_v1_kwargs["merge_frame_features"] = args.merge_frame_features
+
+        # 跟踪
+        if args.tracking:
+            if args.masks:
+                raise ValueError("目前暂时不支持分割")
+            else:
+                model = DeformableDETRTracking(mmtt_v1_kwargs)
+        # 检测
+        else:
+            if args.masks:
+                raise ValueError("目前暂时不支持分割")
+            else:
+                model = DeformableDETR(**mmtt_v1_kwargs)
+    # 普通的transformer
+    else:
+        transformer = build_transformer(args)
+
+        mmtt_v1_kwargs["transformer"] = transformer
+
+        if args.tracking:
+            if args.masks:
+                raise ValueError("目前暂时不支持分割")
+            else:
+                model = DETRTracking(mmtt_v1_kwargs)
+        else:
+            if args.masks:
+                raise ValueError("目前暂时不支持分割")
+            else:
+                model = DETR(**mmtt_v1_kwargs)
 
     # 损失函数的构建
     weight_dict = {'loss_ce': args.cls_loss_coef,
@@ -72,5 +109,12 @@ def build_model(args):
         tracking=args.tracking,
         track_query_false_positive_eos_weight=args.track_query_false_positive_eos_weight, )
     criterion.to(device)
+
+    if args.focal_loss:
+        postprocessors = {'bbox': DeformablePostProcess()}
+    else:
+        postprocessors = {'bbox': PostProcess()}
+
+    return model, criterion, postprocessors
 
 
