@@ -13,7 +13,7 @@ from utils.misc import (NestedTensor, accuracy, dice_loss, get_world_size,
 class DETR(nn.Module):
 
     def __init__(self, backbone, transformer, num_classes, num_queries,
-                 aux_loss=False, overflow_boxes=False):
+                 aux_loss=False, overflow_boxes=False, **kwargs):
         """ Initializes the model.
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py

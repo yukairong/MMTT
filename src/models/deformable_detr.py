@@ -7,7 +7,7 @@ from torch import nn
 
 from utils import box_ops
 from utils.misc import NestedTensor, inverse_sigmoid, nested_tensor_from_tensor_list
-from detr import DETR, PostProcess
+from models.detr import DETR, PostProcess
 
 def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
@@ -18,7 +18,7 @@ class DeformableDETR(DETR):
     """
     def __init__(self, backbone, transformer, num_classes, num_queries, num_feature_levels,
                  aux_loss=True, with_box_refine=False, two_stage=False, overflow_boxes=False,
-                 multi_frame_attention=False, multi_frame_encoding=False, merge_frame_features=False):
+                 multi_frame_attention=False, multi_frame_encoding=False, merge_frame_features=False, **kwargs):
         """ Initializes the model.
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py

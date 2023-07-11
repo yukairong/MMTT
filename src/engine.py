@@ -6,7 +6,7 @@ from typing import Iterable
 
 import torch
 
-from .utils import misc as utils
+from src.utils import misc as utils
 
 from .datasets import get_coco_api_from_dataset
 
