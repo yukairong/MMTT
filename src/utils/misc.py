@@ -10,6 +10,7 @@ from torch import Tensor
 import torch.distributed as dist
 import torch.nn.functional as F
 
+
 # *********************************************************************************************************************
 def nested_dict_to_namespace(dictionary):
     """
@@ -159,6 +160,7 @@ class NestedTensor(object):
 
         return tensor
 
+
 def is_dist_avail_and_initialized():
     if not dist.is_available():
         return False
@@ -166,10 +168,12 @@ def is_dist_avail_and_initialized():
         return False
     return True
 
+
 def get_rank():
     if not is_dist_avail_and_initialized():
         return 0
     return dist.get_rank()
+
 
 def is_main_process():
     return get_rank() == 0
@@ -186,6 +190,7 @@ def nested_dict_to_device(dictionary, device):
 
     return dictionary.to(device)
 
+
 def inverse_sigmoid(x, eps=1e-5):
     """
     sigmoid反归一化
@@ -198,6 +203,7 @@ def inverse_sigmoid(x, eps=1e-5):
     x2 = (1 - x).clamp(min=eps)
 
     return torch.log(x1 / x2)
+
 
 @torch.no_grad()
 def accuracy(output, target, topk=(1,)):
@@ -223,6 +229,7 @@ def accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
+
 def dice_loss(inputs, targets, num_boxes):
     """
     Compute the DICE loss, similar to generalized IOU for masks
@@ -240,6 +247,7 @@ def dice_loss(inputs, targets, num_boxes):
     loss = 1 - (numerator + 1) / (denominator + 1)
     return loss.sum() / num_boxes
 
+
 def get_world_size():
     """
     获取GPU总数
@@ -249,7 +257,9 @@ def get_world_size():
         return 1
     return dist.get_world_size()
 
-def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2, query_mask=None, reduction=True):
+
+def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2, query_mask=None,
+                       reduction=True):
     """
     Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
     Args:
@@ -267,7 +277,7 @@ def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: f
     """
     prob = inputs.sigmoid()
     ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
-    p_t= prob * targets + (1 - prob) * (1 - targets)
+    p_t = prob * targets + (1 - prob) * (1 - targets)
     loss = ce_loss * ((1 - p_t) ** gamma)
 
     if alpha >= 0:
@@ -283,10 +293,38 @@ def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: f
 
     return loss.mean(1).sum() / num_boxes
 
+def reduce_dict(input_dict, average=True):
+    """
+    Args:
+        input_dict (dict): all the values will be reduced
+        average (bool): whether to do average or sum
+    Reduce the values in the dictionary from all processes so that all processes
+    have the averaged results. Returns a dict with the same fields as
+    input_dict, after reduction.
+    """
+    world_size = get_world_size()
+    if world_size < 2:
+        return input_dict
+    with torch.no_grad():
+        names = []
+        values = []
+        # sort the keys so that they are consistent across processes
+        for k in sorted(input_dict.keys()):
+            names.append(k)
+            values.append(input_dict[k])
+        values = torch.stack(values, dim=0)
+        dist.all_reduce(values)
+        if average:
+            values /= world_size
+        reduced_dict = {k: v for k, v in zip(names, values)}
+
+    return reduced_dict
+
 class SmoothedValue(object):
     """
     Track a series of values and provide access to smoothed values over a window or the global series average
     """
+
     def __init__(self, window_size=20, fmt=None):
         if fmt is None:
             fmt = "{median:.4f} ({global_avg:.4f})"
@@ -344,6 +382,7 @@ class SmoothedValue(object):
             max=self.max,
             value=self.value
         )
+
 
 class MetricLogger(object):
     def __init__(self, print_freq, delimiter="\t", vis=None, debug=False):
