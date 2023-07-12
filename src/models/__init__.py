@@ -9,6 +9,7 @@ from models.detr import DETR, PostProcess
 from models.detr_tracking import DeformableDETRTracking, DETRTracking
 from models.deformable_detr import DeformableDETR, DeformablePostProcess
 
+from models.multi_view_deformable_tracking import MultiViewDeformableTrack
 def build_model(args):
     """
     构建网络模型
@@ -51,18 +52,23 @@ def build_model(args):
         mmtt_v1_kwargs["multi_frame_encoding"] = args.multi_frame_encoding
         mmtt_v1_kwargs["merge_frame_features"] = args.merge_frame_features
 
-        # 跟踪
-        if args.tracking:
-            if args.masks:
-                raise ValueError("目前暂时不支持分割")
-            else:
-                model = DeformableDETRTracking(mmtt_v1_kwargs)
-        # 检测
+        # 多视角
+        if args.multi_view:
+            # TODO: 构建多视角跟踪模型
+            model = MultiViewDeformableTrack(mmtt_v1_kwargs)
         else:
-            if args.masks:
-                raise ValueError("目前暂时不支持分割")
+            # 跟踪
+            if args.tracking:
+                if args.masks:
+                    raise ValueError("目前暂时不支持分割")
+                else:
+                    model = DeformableDETRTracking(mmtt_v1_kwargs)
+            # 检测
             else:
-                model = DeformableDETR(**mmtt_v1_kwargs)
+                if args.masks:
+                    raise ValueError("目前暂时不支持分割")
+                else:
+                    model = DeformableDETR(**mmtt_v1_kwargs)
     # 普通的transformer
     else:
         transformer = build_transformer(args)
