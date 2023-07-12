@@ -19,7 +19,7 @@ num_queries: 300  # Number of object queries
 start_epoch: 1
 epochs: 50
 
-mutli_view: True
+multi_view: True
 
 clip_max_norm: 0.1  # gradient clipping max norm
 
