@@ -213,6 +213,7 @@ class DeformableTransformer(nn.Module):
             # 由query pos接一个全连接层 再归一化后的参考点中心坐标[bs, 300, 256] -> [bs, 300, 2]
             reference_points = self.reference_points(query_embed).sigmoid()
 
+            # TODO: 多视角跟踪 "track_query_hs_embeds"需要替换
             if targets is not None and 'track_query_hs_embeds' in targets[0]:
                 # print([t['track_query_hs_embeds'].shape for t in targets])
                 # prev_hs_embed = torch.nn.utils.rnn.pad_sequence([t['track_query_hs_embeds'] for t in targets], batch_first=True, padding_value=float('nan'))
