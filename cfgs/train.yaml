@@ -19,6 +19,8 @@ num_queries: 300  # Number of object queries
 start_epoch: 1
 epochs: 50
 
+mutli_view: True
+
 clip_max_norm: 0.1  # gradient clipping max norm
 
 # ###### MATCHER CONFIG #####
@@ -37,9 +39,6 @@ cls_loss_coef: 1.0
 bbox_loss_coef: 5.0
 giou_loss_coef: 2
 track_query_false_positive_eos_weight: True
-
-
-
 
 # ###### DATASET CONFIG ######
 # The file name where WildTrack Dataset convert to COCO type to save
