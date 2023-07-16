@@ -28,6 +28,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module, postproc
     metric_logger.add_meter("class_error", utils.SmoothedValue(window_size=1, fmt="{value:.2f}"))
 
     for i, (samples, targets) in enumerate(metric_logger.log_every(data_loader, epoch)):
+        # print(i)
         samples = samples.to(device)
         targets = [utils.nested_dict_to_device(t, device) for t in targets]
 
@@ -37,7 +38,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module, postproc
         outputs, targets, *_ = model(samples, targets)
 
         loss_dict = criterion(outputs, targets)
-        weight_dict = criterion.weight_dict # 损失权重
+        weight_dict = criterion.weight_dict  # 损失权重
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
 
         # reduce losses over all GPUs for logging purposes

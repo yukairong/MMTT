@@ -342,7 +342,7 @@ class SetCriterion(nn.Module):
             predicted non-empty boxes. This is not really a loss, it is intended
             for logging purposes only. It doesn't propagate gradients
         """
-        pred_logits = outputs['pred_logits']
+        pred_logits = outputs['pred_logits']  # [300, 2, 1]
         device = pred_logits.device
         tgt_lengths = torch.as_tensor([len(v["labels"]) for v in targets], device=device)
         # Count the number of predictions that are NOT "no-object" (which is the last class)

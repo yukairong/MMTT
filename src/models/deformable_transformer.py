@@ -270,7 +270,7 @@ class DeformableTransformer(nn.Module):
             return (hs, memory, init_reference_out, inter_references_out,
                     enc_outputs_class, enc_outputs_coord_unact)
 
-        # hs: 6层decoder输出 [n_decoder, bs, num_query, d_model]
+        # hs: 6层decoder输出 [n_decoder, bs, num_query, d_model], memory：最后一层decoder输出，
         return hs, memory, init_reference_out, inter_references_out, None, None
 
 

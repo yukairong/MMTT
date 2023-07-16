@@ -251,7 +251,7 @@ class DeformableDETR(DETR):
         memory_slices = []
         batch_size, _, channels = memory.shape
 
-        # 将每个src输入的embedding对应的memory部分取出来
+        # 将每个src输入的embedding对应的memory部分取出来。memory[list 4]features_all[list 4]对应，hs[6,1,300,256]是每层decoder的输出
         for src in src_list:
             _, _, height, width = src.shape
             memory_slice = memory[:, offset:offset + height * width].permute(0, 2, 1).view(

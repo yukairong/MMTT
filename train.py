@@ -126,12 +126,6 @@ def train(args: Namespace) -> None:
 
         train_one_epoch(model, criterion, postprocessors, data_loader_train, optimizer, device, epoch, args)
 
-    # for i, (samples, targets) in enumerate(data_loader_train):
-    #     samples = samples.to(device)
-    #     targets = [misc.nested_dict_to_device(t, device) for t in targets]
-    #     test(args, samples)
-    #     break
-
 
 if __name__ == '__main__':
     config = ex.run_commandline().config
