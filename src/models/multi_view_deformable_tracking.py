@@ -55,16 +55,16 @@ class MultiViewDeformableTrack(nn.Module):
                     else:
                         # prev_out: t-1帧下的存储信息, 存储pred_logits, pred_boxes, hs_embed, aux_outputs
                         # prev_features: t-1帧下的backbone上获得的features
-                        # prev_memory: t-1帧下的embedding对应的decoder输出, [(batch_size, channels, height, width)]
+                        # prev_memory: t-1帧下的backbone对应的输出做embeding, [(batch_size, channels, height, width)]
                         # prev_hs: t-1帧下的多层的decoder输出 [n_decoder, bs, num_query, d_model]
                         prev_out, _, prev_features, prev_memory, prev_hs = self.deformable_detr([t["prev_image"] for t in targets]) # t-1帧计算
 
                     # 对prev_out, prev_features, prev_memory以及prev_hs进行处理
                     prev_outputs_without_aux = {
-                        k: v for k, v in prev_out.item() if "aux_outputs" not in k
+                        k: v for k, v in prev_out.items() if "aux_outputs" not in k
                     }
 
-                    # t-1帧的decoder输出和标注 pre_outputs与pre_targets进行匹配
+                    # t-1帧的decoder输出和标注 pre_outputs与pre_targets进行匹配， 300 和 4 做一个匹配
                     prev_indices = self._matcher(prev_outputs_without_aux,
                                                  prev_targets)
 
@@ -83,11 +83,11 @@ class MultiViewDeformableTrack(nn.Module):
                     if num_prev_target_ind:
                         # [0, 3)
                         num_prev_target_ind_for_fps = torch.randint(
-                            # (假阳概率 * 公共的目标数) + 1
+                            # (假阳概率 * 公共的目标数) + 1，确保【假阳】目标 少于 【真阳】目标数。否则【阳】中 更多的是假阳，不利于收敛
                             int(math.ceil(self._track_query_false_positive_prob * num_prev_target_ind)) + 1, (1,)
                         ).item()
 
-                    for i, (target, prev_ind) in enumerate(zip(targets, prev_indices)):
+                    for i, (target, prev_ind) in enumerate(zip(targets, prev_indices)):  # 考虑batch，循环{batch}次
                         # prev_out_ind: decoder输出的300个query中,作为输出目标对应的id数 [0, 300)
                         # prev_target_ind: 匈牙利匹配得到的 标注文件对应的track_id的值索引
                         prev_out_ind, prev_target_ind = prev_ind
@@ -120,15 +120,18 @@ class MultiViewDeformableTrack(nn.Module):
                         target["track_query_match_ids"] = target_ind_matched_idx    # t帧和t-1帧匹配的track ID索引
 
                         # TODO：取出matched的特征,并把track query部分放入历史存储池中
-                        matched_idx_list = prev_out_ind[target_ind_matching]  # 匹配到的对应的track id在预测输出的序号列表
-                        # 如果对应的匹配结果不为空,那么将对应的
+                        # prev_out_ind = prev_out_ind.cpu()
+                        matched_idx_list = prev_out_ind[target_ind_matching.cpu()]  # 匹配到的对应的track id在预测输出的序号列表
+                        # 如果对应的匹配结果不为空,那么将对应的track id的特征值存入track pool中
                         if len(matched_idx_list) > 0:
                             for index_in_list, output_index in enumerate(matched_idx_list):
                                 track_id = target_ind_matched_idx[index_in_list]
                                 prev_hs_matched = prev_hs[-1, i, output_index, :]
 
                                 # 将该track id的特征值存入track pool中
-                                self.track_pools[track_id].append(prev_hs_matched)
+                                if track_id.cpu() not in self.track_pools:
+                                    self.track_pools[int(track_id.cpu())] = []
+                                self.track_pools[int(track_id.cpu())].append(prev_hs_matched.cpu())
 
                         # random false positive
                         # if add_false_pos: 始终为True
@@ -142,10 +145,10 @@ class MultiViewDeformableTrack(nn.Module):
 
                         random_false_out_ind = []
                         # num_prev_target_ind: 当前batch图片对应的前一帧图像中公共的目标数量
-                        # prev_target_ind_for_fps: 公共的目标取随机个?
+                        # prev_target_ind_for_fps: 公共的目标取随机个? ********************************
                         prev_target_ind_for_fps = torch.randperm(num_prev_target_ind)[:num_prev_target_ind_for_fps]
 
-                        for j in prev_target_ind_for_fps:
+                        for j in prev_target_ind_for_fps:  # 就 j 是编号【index】
                             # TODO：将认为可能是新目标的特征存储起来
                             multi_view_new_obj_hs = prev_hs[-1, i, j, :]
                             self.frame_new_obj_hs.append(multi_view_new_obj_hs) # 将其放入frame_new_obj_hs中,以备后续融合
@@ -153,7 +156,7 @@ class MultiViewDeformableTrack(nn.Module):
                             # prev_boxes_unmatched: 当前batch中第i张图片未能与t-1帧目标匹配的预测框
                             prev_boxes_unmatched = prev_out["pred_boxes"][i, not_prev_out_ind]
 
-                            if len(prev_boxes_matched) > j: # 判断j是否没有超出prev_boxes_matched范围
+                            if len(prev_boxes_matched) > j:  # 判断j是否没有超出prev_boxes_matched范围
                                 prev_box_matched = prev_boxes_matched[j]
                                 # 匹配到的中心值 - 未匹配到的box中心值
                                 box_weights = prev_box_matched.unsqueeze(dim=0)[:, :2] - prev_boxes_unmatched[:, :2]
@@ -187,12 +190,12 @@ class MultiViewDeformableTrack(nn.Module):
 
                     target["track_queries_mask"] = torch.cat([
                         track_queries_mask,
-                        torch.tensor([False, ] * self.num_queries).to(device)
+                        torch.tensor([False, ] * self.deformable_detr.num_queries).to(device)
                     ]).bool()
 
                     target["track_queries_fal_pos_mask"] = torch.cat([
                         track_queries_fal_pos_mask,
-                        torch.tensor([False, ] * self.num_queries).to(device)
+                        torch.tensor([False, ] * self.deformable_detr.num_queries).to(device)
                     ]).bool()
             else:
                 pass
