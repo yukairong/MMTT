@@ -15,13 +15,16 @@ position_embedding: "sine"
 backbone: resnet50  # Name of the convolutional backbone to use. ('resnet50', 'resnet101')
 dilation: False # If true, we replace stride with dilation in the last convolutional block (DC5)
 num_queries: 300  # Number of object queries
+lr_drop: 40
 
 start_epoch: 1
 epochs: 50
 
 multi_view: True
 
+# model save
 clip_max_norm: 0.1  # gradient clipping max norm
+save_model_interval: 5  # epoch interval for model saving, if 0 only save last and best models
 
 # ###### MATCHER CONFIG #####
 set_cost_class: 1.0 # Class coefficient in the matching cost
