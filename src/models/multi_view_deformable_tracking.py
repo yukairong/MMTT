@@ -122,6 +122,16 @@ class MultiViewDeformableTrack(nn.Module):
                         # TODO：取出matched的特征,并把track query部分放入历史存储池中
                         # prev_out_ind = prev_out_ind.cpu()
                         matched_idx_list = prev_out_ind[target_ind_matching.cpu()]  # 匹配到的对应的track id在预测输出的序号列表
+                        new_obj_ind_matching = [i for i in prev_out_ind if i not in target_ind_matching.cpu()]  # 获取新匹配的query id
+                        new_obj_matched_idx_list = prev_out_ind[new_obj_ind_matching]   # 匹配到的新的object id再预测输出的序号列表
+
+                        # 如果对应的新obj结果不为空,那么将对应的object id的特征值存入
+                        # TODO：将认为可能是新目标的特征存储起来
+                        if len(new_obj_matched_idx_list) > 0:
+                            for output_index in enumerate(new_obj_matched_idx_list):
+                                multi_view_new_obj_hs = prev_hs[-1, i, output_index, :]
+                                self.frame_new_obj_hs.append(multi_view_new_obj_hs)  # 将其放入frame_new_obj_hs中,以备后续融合
+
                         # 如果对应的匹配结果不为空,那么将对应的track id的特征值存入track pool中
                         if len(matched_idx_list) > 0:
                             for index_in_list, output_index in enumerate(matched_idx_list):
@@ -149,10 +159,6 @@ class MultiViewDeformableTrack(nn.Module):
                         prev_target_ind_for_fps = torch.randperm(num_prev_target_ind)[:num_prev_target_ind_for_fps]
 
                         for j in prev_target_ind_for_fps:  # 就 j 是编号【index】
-                            # TODO：将认为可能是新目标的特征存储起来
-                            multi_view_new_obj_hs = prev_hs[-1, i, j, :]
-                            self.frame_new_obj_hs.append(multi_view_new_obj_hs) # 将其放入frame_new_obj_hs中,以备后续融合
-
                             # prev_boxes_unmatched: 当前batch中第i张图片未能与t-1帧目标匹配的预测框
                             prev_boxes_unmatched = prev_out["pred_boxes"][i, not_prev_out_ind]
 
