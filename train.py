@@ -1,5 +1,6 @@
 import os
 import time
+import datetime
 from argparse import Namespace
 from pathlib import Path
 
@@ -81,6 +82,8 @@ def train(args: Namespace) -> None:
 
     optimizer = torch.optim.AdamW(param_dicts, lr=args.lr, weight_decay=args.weight_decay)
 
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [args.lr_drop])
+
     # ****************************** 构建数据集 **************************************************************************
     dataset_train = build_dataset(split='train', args=args)
     img, target = dataset_train[0]
@@ -125,6 +128,33 @@ def train(args: Namespace) -> None:
             pass
 
         train_one_epoch(model, criterion, postprocessors, data_loader_train, optimizer, device, epoch, args)
+
+        lr_scheduler.step()
+
+        checkpoint_paths = [output_dir / 'checkpoint.pth']
+
+        # model saving
+        if args.output_dir:
+            if args.save_model_interval and not epoch % args.save_model_interval:
+                checkpoint_paths.append(output_dir / f"checkpoint_epoch_{epoch}.pth")
+
+            for checkpoint_path in checkpoint_paths:
+                misc.save_on_master({
+                    "model": model.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "lr_scheduler": lr_scheduler.state_dict(),
+                    "epoch": epoch,
+                    "args": args,
+                }, checkpoint_path)
+
+    total_time = time.time() - start_time
+    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+    print("Training time {}".format(total_time_str))
+    # for i, (samples, targets) in enumerate(data_loader_train):
+    #     samples = samples.to(device)
+    #     targets = [misc.nested_dict_to_device(t, device) for t in targets]
+    #     test(args, samples)
+    #     break
 
 
 if __name__ == '__main__':
