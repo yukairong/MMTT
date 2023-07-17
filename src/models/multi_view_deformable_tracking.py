@@ -209,8 +209,8 @@ class MultiViewDeformableTrack(nn.Module):
                 for target in targets:
                     device = target['boxes'].device
 
-                    target["track_query_hs_embeds"] = torch.zeros(0, self.hidden_dim).float().to(device)
-                    target["track_queries_mask"] = torch.zeros(self.num_queries).bool().to(device)
+                    target["track_query_hs_embeds"] = torch.zeros(0, self.deformable_detr.hidden_dim).float().to(device)
+                    target["track_queries_mask"] = torch.zeros(self.deformable_detr.num_queries).bool().to(device)
                     target["track_query_boxes"] = torch.zeros(0, 4).to(device)
                     target["track_query_match_ids"] = torch.tensor([]).long().to(device)
 
