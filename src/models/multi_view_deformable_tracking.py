@@ -182,27 +182,27 @@ class MultiViewDeformableTrack(nn.Module):
                             torch.tensor([False,] * len(random_false_out_ind)).bool().to(device)
                         ])
 
-                    # track query masks
-                    track_queries_mask = torch.ones_like(target_ind_matching).bool()
-                    track_queries_fal_pos_mask = torch.zeros_like(target_ind_matching).bool()
-                    track_queries_fal_pos_mask[~target_ind_matching] = True
+                        # track query masks
+                        track_queries_mask = torch.ones_like(target_ind_matching).bool()
+                        track_queries_fal_pos_mask = torch.zeros_like(target_ind_matching).bool()
+                        track_queries_fal_pos_mask[~target_ind_matching] = True
 
-                    # TODO: 将其放入多视角目标融合模块
+                        # TODO: 将其放入多视角目标融合模块
 
-                    # set prev frame info
-                    target['multi_track_query_hs_embeds'] = None    # 存储多视角跟踪特征信息
-                    target['track_query_hs_embeds'] = prev_out['hs_embed'][i, prev_out_ind]
-                    target["track_query_boxes"] = prev_out["pred_boxes"][i, prev_out_ind].detach()
+                        # set prev frame info
+                        target['multi_track_query_hs_embeds'] = None    # 存储多视角跟踪特征信息
+                        target['track_query_hs_embeds'] = prev_out['hs_embed'][i, prev_out_ind]
+                        target["track_query_boxes"] = prev_out["pred_boxes"][i, prev_out_ind].detach()
 
-                    target["track_queries_mask"] = torch.cat([
-                        track_queries_mask,
-                        torch.tensor([False, ] * self.deformable_detr.num_queries).to(device)
-                    ]).bool()
+                        target["track_queries_mask"] = torch.cat([
+                            track_queries_mask,
+                            torch.tensor([False, ] * self.deformable_detr.num_queries).to(device)
+                        ]).bool()
 
-                    target["track_queries_fal_pos_mask"] = torch.cat([
-                        track_queries_fal_pos_mask,
-                        torch.tensor([False, ] * self.deformable_detr.num_queries).to(device)
-                    ]).bool()
+                        target["track_queries_fal_pos_mask"] = torch.cat([
+                            track_queries_fal_pos_mask,
+                            torch.tensor([False, ] * self.deformable_detr.num_queries).to(device)
+                        ]).bool()
             else:
                 # if not training we do not add track queries and evaluate detection performance only
                 # tracking performance is evaluated by the actual tracking evaluation.
