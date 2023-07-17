@@ -122,8 +122,9 @@ class MultiViewDeformableTrack(nn.Module):
                         # TODO：取出matched的特征,并把track query部分放入历史存储池中
                         # prev_out_ind = prev_out_ind.cpu()
                         matched_idx_list = prev_out_ind[target_ind_matching.cpu()]  # 匹配到的对应的track id在预测输出的序号列表
-                        new_obj_ind_matching = [i for i in prev_out_ind if i not in target_ind_matching.cpu()]  # 获取新匹配的query id
-                        new_obj_matched_idx_list = prev_out_ind[new_obj_ind_matching]   # 匹配到的新的object id再预测输出的序号列表
+                        new_obj_ind_matching = [i for i in prev_out_ind if i not in matched_idx_list]  # 获取新匹配的query id
+                        new_obj_matched_idx_list = new_obj_ind_matching
+                        # new_obj_matched_idx_list = prev_out_ind[new_obj_ind_matching]   # 匹配到的新的object id再预测输出的序号列表
 
                         # 如果对应的新obj结果不为空,那么将对应的object id的特征值存入
                         # TODO：将认为可能是新目标的特征存储起来
