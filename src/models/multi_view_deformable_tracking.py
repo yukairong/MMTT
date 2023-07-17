@@ -204,7 +204,15 @@ class MultiViewDeformableTrack(nn.Module):
                         torch.tensor([False, ] * self.deformable_detr.num_queries).to(device)
                     ]).bool()
             else:
-                pass
+                # if not training we do not add track queries and evaluate detection performance only
+                # tracking performance is evaluated by the actual tracking evaluation.
+                for target in targets:
+                    device = target['boxes'].device
+
+                    target["track_query_hs_embeds"] = torch.zeros(0, self.hidden_dim).float().to(device)
+                    target["track_queries_mask"] = torch.zeros(self.num_queries).bool().to(device)
+                    target["track_query_boxes"] = torch.zeros(0, 4).to(device)
+                    target["track_query_match_ids"] = torch.tensor([]).long().to(device)
 
         out, targets, features, memory, hs = self.deformable_detr(samples, targets, prev_features)
 
