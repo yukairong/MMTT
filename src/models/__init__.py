@@ -34,6 +34,7 @@ def build_model(args):
         "num_queries": args.num_queries,
         "aux_loss": args.aux_loss,
         "overflow_boxes": args.overflow_boxes,
+        "person_num": args.person_num,
 
         # track part
         "track_query_false_positive_prob": args.track_query_false_positive_prob,
