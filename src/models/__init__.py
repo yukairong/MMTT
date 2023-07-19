@@ -90,7 +90,9 @@ def build_model(args):
     # 损失函数的构建
     weight_dict = {'loss_ce': args.cls_loss_coef,
                    'loss_bbox': args.bbox_loss_coef,
-                   'loss_giou': args.giou_loss_coef, }
+                   'loss_giou': args.giou_loss_coef,
+                   'loss_instance': args.instance_loss_coef,
+                   'loss_cluster': args.cluster_loss_coef}
 
     # 是否使用辅助训练
     if args.aux_loss:
@@ -102,7 +104,7 @@ def build_model(args):
             aux_weight_dict.update({k + f'_enc': v for k, v in weight_dict.items()})
         weight_dict.update(aux_weight_dict)
 
-    losses = ['labels', 'boxes', 'cardinality']
+    losses = ['labels', 'boxes', 'cardinality', 'instance', 'cluster']
 
     criterion = SetCriterion(
         num_classes,

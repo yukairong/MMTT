@@ -10,6 +10,7 @@ from utils.misc import (NestedTensor, accuracy, dice_loss, get_world_size,
                         interpolate, is_dist_avail_and_initialized,
                         nested_tensor_from_tensor_list, sigmoid_focal_loss)
 
+
 class SetCriterion(nn.Module):
     """ This class computes the loss for DETR.
     The process happens in two steps:
@@ -77,12 +78,14 @@ class SetCriterion(nn.Module):
         mask = mask.bool()
         return mask
 
-    def loss_instances(self, zi_outputs, zj_outputs):
+    def loss_instances(self, outputs, targets, indices, num_boxes):
         """Instance-level loss
 
         outputs: instance-level mlp outputs
         targets: track ids
         """
+        zi_outputs = outputs["pred_instance_i"]
+        zj_outputs = outputs["pred_instance_j"]
         zi_bs, zj_bs = zi_outputs.shape[0], zj_outputs.shape[0]
         assert zi_bs == zj_bs, "MLP输出长度不一致"
 
@@ -106,7 +109,8 @@ class SetCriterion(nn.Module):
 
         loss /= N
 
-        return loss
+        losses = {"loss_instance": loss}
+        return losses
 
     def mask_correlated_clusters(self, class_num):
         N = 2 * class_num
@@ -119,7 +123,9 @@ class SetCriterion(nn.Module):
 
         return mask
 
-    def loss_cluster(self, ci_outputs, cj_outputs):
+    def loss_cluster(self, outputs, targets, indices, num_boxes):
+        ci_outputs = outputs["pred_cluster_i"]
+        cj_outputs = outputs["pred_cluster_j"]
         p_i = ci_outputs.sum(0).view(-1)
         p_i /= p_i.sum()
         ne_i = math.log(p_i.size(0)) + (p_i * torch.log(p_i)).sum()
@@ -134,7 +140,7 @@ class SetCriterion(nn.Module):
         N = 2 * self.track_ids_length
         c = torch.cat((c_i, c_j), dim=0)
 
-        similarity_f = nn.CosineSimilarity(dim = 2)
+        similarity_f = nn.CosineSimilarity(dim=2)
         mask = self.mask_correlated_clusters(self.track_ids_length)
         criterion = nn.CrossEntropyLoss(reduction="sum")
 
@@ -150,8 +156,8 @@ class SetCriterion(nn.Module):
         loss = criterion(logits, labels)
         loss /= N
 
-        return loss + ne_loss
-
+        losses = {"loss_cluster": loss + ne_loss}
+        return losses
 
     def loss_labels(self, outputs, targets, indices, _, log=True):
         """Classification loss (NLL)
@@ -330,6 +336,8 @@ class SetCriterion(nn.Module):
             'cardinality': self.loss_cardinality,
             'boxes': self.loss_boxes,
             'masks': self.loss_masks,
+            'instances': self.loss_instances,
+            'clusters': self.loss_cluster
         }
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
@@ -342,6 +350,12 @@ class SetCriterion(nn.Module):
                          pred_boxes: [1, 329, 4]
                          hs_embed: [1. 329. 256]
                          aux_outputs: list 5,每个list 是一个字典，每个字典里有 pred_boxes 和  pred_logits
+
+                         pred_instance_i
+                         pred_instance_j
+
+                         pred_cluster_i
+                         pred_cluster_j
              targets: list of dicts, such that len(targets) == batch_size.
                       The expected keys in each dict depends on the losses applied,
                       see each loss' doc
