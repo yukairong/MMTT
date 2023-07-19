@@ -1,5 +1,6 @@
 import torch
-from models.detr import SetCriterion
+# from models.detr import SetCriterion
+from models.criterion import SetCriterion
 from models.backbone import build_backbone
 from models.matcher import build_matcher
 from models.transformer import build_transformer
