@@ -214,8 +214,8 @@ class DeformableTransformer(nn.Module):
             reference_points = self.reference_points(query_embed).sigmoid()
 
             # TODO: 多视角跟踪 "track_query_hs_embeds"需要替换
-            # if targets is not None and 'track_query_hs_embeds' in targets[0]:
-            if targets is not None and "multi_track_query_hs_embeds" in targets[0]:
+            if targets is not None and 'track_query_hs_embeds' in targets[0]:
+            # if targets is not None and "multi_track_query_hs_embeds" in targets[0]:
                 # print([t['track_query_hs_embeds'].shape for t in targets])
                 # prev_hs_embed = torch.nn.utils.rnn.pad_sequence([t['track_query_hs_embeds'] for t in targets], batch_first=True, padding_value=float('nan'))
                 # prev_boxes = torch.nn.utils.rnn.pad_sequence([t['track_query_boxes'] for t in targets], batch_first=True, padding_value=float('nan'))
@@ -225,7 +225,7 @@ class DeformableTransformer(nn.Module):
 
                 # 先前的embed和boxes
                 # prev_hs_embed = torch.stack([t['track_query_hs_embeds'] for t in targets])
-                prev_hs_embed = torch.stack(targets[0]["multi_track_query_hs_embeds"])
+                prev_hs_embed = torch.stack(targets[0]["track_query_hs_embeds"])[None, ...].repeat(bs, 1, 1)
                 prev_boxes = torch.stack([t['track_query_boxes'] for t in targets])
 
                 prev_query_embed = torch.zeros_like(prev_hs_embed)
@@ -235,7 +235,7 @@ class DeformableTransformer(nn.Module):
 
                 prev_tgt = prev_hs_embed
                 # prev_tgt = self.hs_embed_to_tgt(prev_hs_embed)
-
+                # [1, 1, 256] + [1, 2, 256] --- [2, 2, 256], query_embed=[bs, 300, 256] = [1, 300, 256] + [1, 300, 256].
                 query_embed = torch.cat([prev_query_embed, query_embed], dim=1)
                 tgt = torch.cat([prev_tgt, tgt], dim=1)
 

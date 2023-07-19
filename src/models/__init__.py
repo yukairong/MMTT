@@ -105,7 +105,7 @@ def build_model(args):
             aux_weight_dict.update({k + f'_enc': v for k, v in weight_dict.items()})
         weight_dict.update(aux_weight_dict)
 
-    losses = ['labels', 'boxes', 'cardinality', 'instance', 'cluster']
+    losses = ['labels', 'boxes', 'cardinality', 'instances', 'clusters']
 
     criterion = SetCriterion(
         num_classes,

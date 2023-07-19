@@ -399,6 +399,8 @@ class SetCriterion(nn.Module):
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
                 indices = self.matcher(aux_outputs, targets)
                 for loss in self.losses:
+                    if loss == 'clusters' or loss == 'instances':
+                        continue
                     if loss == 'masks':
                         # Intermediate masks losses are too costly to compute, we ignore them.
                         continue
@@ -409,6 +411,7 @@ class SetCriterion(nn.Module):
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes, **kwargs)
                     l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
                     losses.update(l_dict)
+
         # two_stage 才会用到的
         if 'enc_outputs' in outputs:
             enc_outputs = outputs['enc_outputs']
