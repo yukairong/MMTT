@@ -6,7 +6,7 @@ lr_linear_proj_mult: 0.1
 weight_decay: 0.0001
 output_dir: './output'
 device: 'cuda'
-seed: 20230715
+seed: 6
 distributed: False
 num_workers: 8
 multi_frame_attention: False
