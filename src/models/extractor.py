@@ -64,3 +64,36 @@ class Extractor(nn.Module):
         query_embed_dim = merge_embed.shape[-1]  # 得到每个query的维度
 
         unique_objs = torch.zeros_like(merge_embed)
+
+class contrastive_cluster_extractor(nn.Module):
+    def __init__(self, feature_dim, cluster_num):
+        super(contrastive_cluster_extractor, self).__init__()
+        self.feature_dim = feature_dim  # 输出的维度应该与embedding 维度一致
+        self.cluster_num = cluster_num  # 训练时为track不同的person Id
+        # instance-level MLP
+        self.instance_projector = nn.Sequential(
+            nn.Linear(self.feature_dim, self.feature_dim),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, self.feature_dim)
+        )
+        # cluster-level MLP
+        self.cluster_projector = nn.Sequential(
+            nn.Linear(self.feature_dim, self.feature_dim),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, self.cluster_num),
+            nn.Softmax(dim=1)
+        )
+
+    def forward(self, h_i, h_j):
+        z_i = F.normalize(self.instance_projector(h_i), dim=1)
+        z_j = F.normalize(self.instance_projector(h_j), dim=1)
+
+        c_i = self.cluster_projector(h_i)
+        c_j = self.cluster_projector(h_j)
+
+        return z_i, z_j, c_i, c_j
+
+    def forward_cluster(self, h):
+        c = self.cluster_projector(h)
+        c = torch.argmax(c, dim=1)
+        return c
