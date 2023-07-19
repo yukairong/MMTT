@@ -10,6 +10,7 @@ from src.utils.misc import NestedTensor, nested_tensor_from_tensor_list
 
 from models.matcher import HungarianMatcher
 from models.deformable_detr import DeformableDETR
+from models.extractor import contrastive_cluster_extractor
 
 class MultiViewDeformableTrack(nn.Module):
 
@@ -24,6 +25,7 @@ class MultiViewDeformableTrack(nn.Module):
         self._tracking = False
         self.track_pools = {}   # 存储每个track person的特征信息
         self.frame_new_obj_hs = []  # 存储t帧下各个视角认为可能的新对象
+        self.frame_new_obj_hs_augment = []  # 存储t帧下其他decoder可能新对象的特征
 
     def train(self, mode: bool = True):
         self._tracking = False
@@ -33,7 +35,13 @@ class MultiViewDeformableTrack(nn.Module):
         self.eval()
         self._tracking = True
 
+    def _frame_reset(self):
+        self.frame_new_obj_hs_augment = []
+        self.frame_new_obj_hs_augment = []
+
     def forward(self, samples: NestedTensor, targets: list=None, prev_features=None):
+        # 清空frame_new_obj特征
+        self._frame_reset()
 
         if targets is not None and not self._tracking:
             # 取出batch_size中所有的t-1帧图像
@@ -130,8 +138,13 @@ class MultiViewDeformableTrack(nn.Module):
                         # TODO：将认为可能是新目标的特征存储起来
                         if len(new_obj_matched_idx_list) > 0:
                             for output_index in enumerate(new_obj_matched_idx_list):
+                                # 第6层decoder输出特征
                                 multi_view_new_obj_hs = prev_hs[-1, i, output_index, :]
                                 self.frame_new_obj_hs.append(multi_view_new_obj_hs)  # 将其放入frame_new_obj_hs中,以备后续融合
+
+                                # 第5层decoder输出特征
+                                multi_view_new_obj_hs_augment = prev_hs[-2, i, output_index, :]
+                                self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
 
                         # 如果对应的匹配结果不为空,那么将对应的track id的特征值存入track pool中
                         if len(matched_idx_list) > 0:
