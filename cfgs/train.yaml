@@ -105,3 +105,4 @@ debug: False
 instance_temperature: 0.5
 cluster_temperature: 1.0
 person_num: 1000
+lr_sim: 0.0003

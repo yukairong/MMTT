@@ -72,7 +72,10 @@ def train(args: Namespace) -> None:
 
         {"params": [p for n, p in model.named_parameters()
                     if match_name_keywords(n, args.lr_linear_proj_names) and p.requires_grad],
-         "lr": args.lr * args.lr_linear_proj_mult}
+         "lr": args.lr * args.lr_linear_proj_mult},
+
+        {"params": [p for n, p in model.named_parameters()
+                    if match_name_keywords(n, ['ContrastiveClusterExtractor']) and p.requires_grad], "lr": args.lr_sim}
     ]
 
     if args.track_attention:
