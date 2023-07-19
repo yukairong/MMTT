@@ -116,7 +116,8 @@ def build_model(args):
         tracking=args.tracking,
         track_query_false_positive_eos_weight=args.track_query_false_positive_eos_weight,
         instance_temperature=args.instance_temperature,
-        cluster_temperature=args.cluster_temperature)
+        cluster_temperature=args.cluster_temperature,
+        track_ids_length=args.person_num)
     criterion.to(device)
 
     if args.focal_loss:

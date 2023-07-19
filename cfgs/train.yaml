@@ -102,3 +102,4 @@ debug: False
 # ######## contrastive params ######
 instance_temperature: 0.5
 cluster_temperature: 1.0
+person_num: 1000
