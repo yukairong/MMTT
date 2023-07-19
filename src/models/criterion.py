@@ -1,4 +1,5 @@
 import copy
+import math
 
 import torch
 import torch.nn.functional as F
@@ -28,7 +29,8 @@ class SetCriterion(nn.Module):
     """
 
     def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses,
-                 focal_loss, focal_alpha, focal_gamma, tracking, track_query_false_positive_eos_weight):
+                 focal_loss, focal_alpha, focal_gamma, tracking, track_query_false_positive_eos_weight,
+                 instance_temperature, cluster_temperature, track_ids_length):
         """
 
         :param num_classes: 这里不考虑 no-object category 【背景类】
@@ -42,6 +44,9 @@ class SetCriterion(nn.Module):
         :param focal_gamma: focal_loss的参数 2
         :param tracking: True
         :param track_query_false_positive_eos_weight: True
+        :param instance_temperature: instance-level温度系数,用于对比学习训练上
+        :param cluster_temperature: cluster-level温度系数
+        :param track_ids_length: track person个数
         """
 
         super().__init__()
@@ -58,6 +63,95 @@ class SetCriterion(nn.Module):
         self.focal_gamma = focal_gamma
         self.tracking = tracking
         self.track_query_false_positive_eos_weight = track_query_false_positive_eos_weight
+        self.instance_temperature = instance_temperature
+        self.cluster_temprature = cluster_temperature
+        self.track_ids_length = track_ids_length
+
+    def mask_correlated_samples(self, batch_size):
+        N = 2 * batch_size
+        mask = torch.ones((N, N))
+        mask = mask.fill_diagonal_(0)
+        for i in range(batch_size):
+            mask[i, batch_size + i] = 0
+            mask[batch_size + i, i] = 0
+        mask = mask.bool()
+        return mask
+
+    def loss_instances(self, zi_outputs, zj_outputs):
+        """Instance-level loss
+
+        outputs: instance-level mlp outputs
+        targets: track ids
+        """
+        zi_bs, zj_bs = zi_outputs.shape[0], zj_outputs.shape[0]
+        assert zi_bs == zj_bs, "MLP输出长度不一致"
+
+        batch_size = zi_bs
+        mask = self.mask_correlated_samples(batch_size)
+        criterion = nn.CrossEntropyLoss(reduction="sum")
+
+        N = 2 * batch_size
+        z = torch.cat((zi_outputs, zj_outputs), dim=0)
+
+        sim = torch.matmul(z, z.T) / self.instance_temperature
+        sim_i_j = torch.diag(sim, batch_size)
+        sim_j_i = torch.diag(sim, -batch_size)
+
+        positive_samples = torch.cat((sim_i_j, sim_j_i), dim=0).reshape(N, 1)
+        negative_samples = sim[mask].reshape(N, -1)
+
+        labels = torch.zeros(N).to(positive_samples.device).long()
+        logits = torch.cat((positive_samples, negative_samples), dim=1)
+        loss = criterion(logits, labels)
+
+        loss /= N
+
+        return loss
+
+    def mask_correlated_clusters(self, class_num):
+        N = 2 * class_num
+        mask = torch.ones((N, N))
+        mask = mask.fill_diagonal_(0)
+        for i in range(class_num):
+            mask[i, class_num + i] = 0
+            mask[class_num + i, i] = 0
+        mask = mask.bool()
+
+        return mask
+
+    def loss_cluster(self, ci_outputs, cj_outputs):
+        p_i = ci_outputs.sum(0).view(-1)
+        p_i /= p_i.sum()
+        ne_i = math.log(p_i.size(0)) + (p_i * torch.log(p_i)).sum()
+
+        p_j = cj_outputs.sum(0).view(-1)
+        p_j /= p_j.sum()
+        ne_j = math.log(p_j.size(0)) + (p_j * torch.log(p_j)).sum()
+        ne_loss = ne_i + ne_j
+
+        c_i = ci_outputs.t()
+        c_j = cj_outputs.t()
+        N = 2 * self.track_ids_length
+        c = torch.cat((c_i, c_j), dim=0)
+
+        similarity_f = nn.CosineSimilarity(dim = 2)
+        mask = self.mask_correlated_clusters(self.track_ids_length)
+        criterion = nn.CrossEntropyLoss(reduction="sum")
+
+        sim = similarity_f(c.unsqueeze(1), c.unsqueeze(0)) / self.cluster_temprature
+        sim_i_j = torch.diag(sim, self.track_ids_length)
+        sim_j_i = torch.diag(sim, - self.track_ids_length)
+
+        positive_clusters = torch.cat((sim_i_j, sim_j_i), dim=0).reshape(N, 1)
+        negative_clusters = sim[mask].reshape(N, -1)
+
+        labels = torch.zeros(N).to(positive_clusters.device).long()
+        logits = torch.cat((positive_clusters, negative_clusters), dim=1)
+        loss = criterion(logits, labels)
+        loss /= N
+
+        return loss + ne_loss
+
 
     def loss_labels(self, outputs, targets, indices, _, log=True):
         """Classification loss (NLL)
