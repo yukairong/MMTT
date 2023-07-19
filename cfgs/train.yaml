@@ -98,3 +98,7 @@ enc_n_points: 4
 # ######## VISDOM PARAMS ########
 vis_and_log_interval: 1 # print data frequency
 debug: False
+
+# ######## contrastive params ######
+instance_temperature: 0.5
+cluster_temperature: 1.0
