@@ -7,8 +7,10 @@ from torch import nn, Tensor
 from models.transformer import TransformerDecoderLayer, TransformerDecoder
 from models.deformable_transformer import DeformableTransformerDecoderLayer
 
+
 def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
+
 
 def _get_activation_fn(activation):
     """
@@ -24,6 +26,7 @@ def _get_activation_fn(activation):
         return F.glu
     raise RuntimeError(f"activation should be relu/gelu, not {activation}")
 
+
 class Extractor(nn.Module):
 
     def __init__(self, deformable=False, d_model=512, nhead=8, num_decoder_layers=6,
@@ -34,7 +37,8 @@ class Extractor(nn.Module):
         if deformable:
             raise ValueError("Extractor module don't support deformable decoder...")
         else:
-            decoder_layer = TransformerDecoderLayer(d_model, nhead, dim_feedforward, dropout, activation, normalize_before)
+            decoder_layer = TransformerDecoderLayer(d_model, nhead, dim_feedforward, dropout, activation,
+                                                    normalize_before)
             decoder_norm = nn.LayerNorm(d_model)
 
         self.decoder = TransformerDecoder(decoder_layer, num_decoder_layers, decoder_norm,
@@ -65,9 +69,10 @@ class Extractor(nn.Module):
 
         unique_objs = torch.zeros_like(merge_embed)
 
-class contrastive_cluster_extractor(nn.Module):
+
+class ContrastiveClusterExtractor(nn.Module):
     def __init__(self, feature_dim, cluster_num):
-        super(contrastive_cluster_extractor, self).__init__()
+        super(ContrastiveClusterExtractor, self).__init__()
         self.feature_dim = feature_dim  # 输出的维度应该与embedding 维度一致
         self.cluster_num = cluster_num  # 训练时为track不同的person Id
         # instance-level MLP
