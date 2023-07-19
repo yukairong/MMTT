@@ -41,6 +41,8 @@ eos_coef: 0.1
 cls_loss_coef: 1.0
 bbox_loss_coef: 5.0
 giou_loss_coef: 2
+instance_loss_coef: 1.0
+cluster_loss_coef: 1.0
 track_query_false_positive_eos_weight: True
 
 # ###### DATASET CONFIG ######
