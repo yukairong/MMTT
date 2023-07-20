@@ -42,7 +42,7 @@ class MultiViewDeformableTrack(nn.Module):
         self._tracking = True
 
     def _frame_reset(self):
-        self.frame_new_obj_hs_augment = []
+        self.frame_new_obj_hs = []
         self.frame_new_obj_hs_augment = []
 
     def forward(self, samples: NestedTensor, targets: list = None, prev_features=None):
@@ -102,6 +102,7 @@ class MultiViewDeformableTrack(nn.Module):
                             int(math.ceil(self._track_query_false_positive_prob * num_prev_target_ind)) + 1, (1,)
                         ).item()
 
+                    prev_track_ids_list = []
                     for i, (target, prev_ind) in enumerate(zip(targets, prev_indices)):  # 考虑batch，循环{batch}次
                         # prev_out_ind: decoder输出的300个query中,作为输出目标对应的id数 [0, 300)
                         # prev_target_ind: 匈牙利匹配得到的 标注文件对应的track_id的值索引
@@ -113,7 +114,7 @@ class MultiViewDeformableTrack(nn.Module):
                             # 从而保证检测和跟踪的平衡性
                             # 对之前的帧图像中的目标做掩码(模拟遮挡), 来减少对t-1帧的依赖
                             random_subset_mask = torch.randperm(len(prev_target_ind))[:num_prev_target_ind]
-                            prev_out_ind = prev_out_ind[random_subset_mask]  # t-1帧的输出匹配索引
+                            prev_out_ind = prev_out_ind[random_subset_mask]  # t-1帧的输出匹配索引 [14 221]  221
                             prev_target_ind = prev_target_ind[random_subset_mask]  # t-1帧的掩码后真实匹配索引
 
                         # detected prev frame tracks
@@ -143,20 +144,37 @@ class MultiViewDeformableTrack(nn.Module):
 
                         # 如果对应的新obj结果不为空,那么将对应的object id的特征值存入
                         # TODO：将认为可能是新目标的特征存储起来
-                        if len(new_obj_matched_idx_list) > 0:
-                            for output_index in new_obj_matched_idx_list:
-                                # 第6层decoder输出特征
-                                multi_view_new_obj_hs = prev_hs[-1, i, output_index, :]
-                                self.frame_new_obj_hs.append(multi_view_new_obj_hs)  # 将其放入frame_new_obj_hs中,以备后续融合
+                        # if len(new_obj_matched_idx_list) > 0:
+                        # for output_index in new_obj_matched_idx_list:
+                        #     # 第6层decoder输出特征
+                        #     multi_view_new_obj_hs = prev_hs[-1, i, output_index, :]
+                        #     self.frame_new_obj_hs.append(multi_view_new_obj_hs)  # 将其放入frame_new_obj_hs中,以备后续融合
+                        #
+                        #     # 第5层decoder输出特征
+                        #     multi_view_new_obj_hs_augment = prev_hs[-2, i, output_index, :]
+                        #     self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
 
-                                # 第5层decoder输出特征
+                        if len(src_prev_out_ind) > 0:
+                            for output_index in src_prev_out_ind:
+                                multi_view_new_obj_hs = prev_hs[-1, i, output_index, :]
+                                self.frame_new_obj_hs.append(multi_view_new_obj_hs)
+
                                 multi_view_new_obj_hs_augment = prev_hs[-2, i, output_index, :]
                                 self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
+                        else:
+                            multi_view_new_obj_hs = prev_hs[-1, i, 0, :]
+                            self.frame_new_obj_hs.append(multi_view_new_obj_hs)
 
+                            multi_view_new_obj_hs_augment = prev_hs[-2, i, 0, :]
+                            self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
+
+                        batch_track_ids_list = []
                         # 如果对应的匹配结果不为空,那么将对应的track id的特征值存入track pool中
                         if len(matched_idx_list) > 0:
-                            for index_in_list, output_index in enumerate(matched_idx_list):
-                                track_id = target_ind_matched_idx[index_in_list]
+                            for index_in_list, output_index in enumerate(prev_out_ind):
+                                target_track_id_index = prev_target_ind[index_in_list]
+                                track_id = target["prev_target"]["track_ids"][target_track_id_index]
+                                batch_track_ids_list.append(track_id)
                                 prev_hs_matched = prev_hs[-1, i, output_index, :]
 
                                 # 将该track id的特征值存入track pool中
@@ -164,6 +182,7 @@ class MultiViewDeformableTrack(nn.Module):
                                     self.track_pools[int(track_id.cpu())] = []
                                 self.track_pools[int(track_id.cpu())].append(prev_hs_matched.cpu())
 
+                        prev_track_ids_list.append(batch_track_ids_list)
                         # random false positive
                         # if add_false_pos: 始终为True
                         prev_out_ind = prev_out_ind.to(device)
@@ -243,29 +262,29 @@ class MultiViewDeformableTrack(nn.Module):
 
         pred_cluster_ids = self.extractor.forward_cluster(new_obj_features)
 
-        extractor_features = {}
+        # extractor_features = {}
         # 将所有为一类的特征放在一起
-        for index, cluster_id in enumerate(pred_cluster_ids):
-            feature = self.frame_new_obj_hs[index]  # 取出当前新目标的特征
-            if cluster_id not in extractor_features:
-                extractor_features[cluster_id] = [feature]
-                continue
-            extractor_features[cluster_id].append(feature)  # 合并同类项
+        # for index, cluster_id in enumerate(pred_cluster_ids):
+        #     feature = self.frame_new_obj_hs[index]  # 取出当前新目标的特征
+        #     if cluster_id not in extractor_features:
+        #         extractor_features[cluster_id] = [feature]
+        #         continue
+        #     extractor_features[cluster_id].append(feature)  # 合并同类项
 
-        multi_track_query_embeds = []  # 存储各个视角下全部的目标信息
-        if len(extractor_features) > 0:  # 存在新的对象
-            for obj_index, features in extractor_features.items():
-                num = len(features)
-                merge_feature = features[0]
-                # 只要features不只有一个，就进行融合
-                while num != 1:
-                    tmp = torch.hstack(features[:2])[None, :, None, None].to(device)
-                    merge_feature = self.merge_module(tmp)
-                    # 将两个特征向量融合为1个 [0 1 2 3] - [6]
-                    features.insert(2, merge_feature)
-                    features = features[2:]
-
-                    num -= 1
+        # multi_track_query_embeds = []  # 存储各个视角下全部的目标信息
+        # if len(extractor_features) > 0:  # 存在新的对象
+        #     for obj_index, features in extractor_features.items():
+        #         num = len(features)
+        #         merge_feature = features[0]
+        #         # 只要features不只有一个，就进行融合
+        #         while num != 1:
+        #             tmp = torch.hstack(features[:2])[None, :, None, None].to(device)
+        #             merge_feature = self.merge_module(tmp)
+        #             # 将两个特征向量融合为1个 [0 1 2 3] - [6]
+        #             features.insert(2, merge_feature)
+        #             features = features[2:]
+        #
+        #             num -= 1
 
                 # multi_track_query_embeds.append(merge_feature)  # 融合后的特征放入多视角目标信息中
 
@@ -282,13 +301,17 @@ class MultiViewDeformableTrack(nn.Module):
                     track_features = track_features[2:]
                     num -= 1
 
-                self.track_pools[track_index] = merge_feature
+                self.track_pools[track_index] = [merge_feature]
 
-                multi_track_query_embeds.append(merge_feature)
+                # multi_track_query_embeds.append(merge_feature)
+        for batch_id in range(len(prev_track_ids_list)):  # 取该batch内的第几张图片
+            for step, batch_track_id in enumerate(prev_track_ids_list[batch_id]):
+                if batch_track_id in self.track_pools:
+                    targets[batch_id]["track_query_hs_embeds"][step] = self.track_pools[batch_track_id][0]
 
         # 更新所有的target信息,将跟踪目标信息加入其中
-        for target in targets:
-            target["track_query_hs_embeds"] = [embed.to(device) for embed in multi_track_query_embeds]
+        # for target in targets:
+        #     target["track_query_hs_embeds"] = [embed.to(device) for embed in multi_track_query_embeds]
 
         out, targets, features, memory, hs = self.deformable_detr(samples, targets, prev_features)
 
