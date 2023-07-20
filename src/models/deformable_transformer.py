@@ -224,8 +224,8 @@ class DeformableTransformer(nn.Module):
                 # print(query_mask)
 
                 # 先前的embed和boxes
-                # prev_hs_embed = torch.stack([t['track_query_hs_embeds'] for t in targets])
-                prev_hs_embed = torch.stack(targets[0]["track_query_hs_embeds"])[None, ...].repeat(bs, 1, 1)
+                prev_hs_embed = torch.stack([t['track_query_hs_embeds'] for t in targets])
+                # prev_hs_embed = torch.stack(targets[0]["track_query_hs_embeds"])[None, ...].repeat(bs, 1, 1)
                 prev_boxes = torch.stack([t['track_query_boxes'] for t in targets])
 
                 prev_query_embed = torch.zeros_like(prev_hs_embed)
