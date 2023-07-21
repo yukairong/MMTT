@@ -159,14 +159,13 @@ def train(args: Namespace) -> None:
                     "args": args,
                 }, checkpoint_path)
 
-    # for cluster_epoch in range(args.start_epoch, args.epochs_sim + 1):
-    #     if args.distributed:
-    #         pass
-    #     # TODO: cluster model训练函数
-    #     epoch_loss = train_cluster_model_one_epoch(track_model, cluster_model, data_loader_train,
-    #                                                instance_criterion, cluster_criterion, cluster_optimizer,
-    #                                                device, cluster_epoch, args.contrastive_queries_num)
-    #     print(f"Epoch[{cluster_epoch}/{args.epochs_sim}]   Loss: {epoch_loss / len(data_loader_train)}")
+    for cluster_epoch in range(args.start_epoch, args.epochs_sim + 1):
+        if args.distributed:
+            pass
+        epoch_loss = train_cluster_model_one_epoch(track_model, cluster_model, data_loader_train,
+                                                   instance_criterion, cluster_criterion, cluster_optimizer,
+                                                   device, cluster_epoch, args.contrastive_queries_num)
+        print(f"Epoch[{cluster_epoch}/{args.epochs_sim}]   Loss: {epoch_loss / len(data_loader_train)}")
     # # TODO：保存cluster model
 
 
