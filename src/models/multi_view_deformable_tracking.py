@@ -138,7 +138,8 @@ class MultiViewDeformableTrack(nn.Module):
                         # TODO：取出matched的特征,并把track query部分放入历史存储池中
                         # prev_out_ind = prev_out_ind.cpu()
                         matched_idx_list = prev_out_ind[target_ind_matching.cpu()]  # 匹配到的对应的track id在预测输出的序号列表
-                        new_obj_ind_matching = [i for i in src_prev_out_ind if i not in matched_idx_list]  # 获取新匹配的query id
+                        new_obj_ind_matching = [i for i in src_prev_out_ind if
+                                                i not in matched_idx_list]  # 获取新匹配的query id
                         new_obj_matched_idx_list = new_obj_ind_matching
                         # new_obj_matched_idx_list = prev_out_ind[new_obj_ind_matching]   # 匹配到的新的object id再预测输出的序号列表
 
@@ -154,19 +155,19 @@ class MultiViewDeformableTrack(nn.Module):
                         #     multi_view_new_obj_hs_augment = prev_hs[-2, i, output_index, :]
                         #     self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
 
-                        if len(src_prev_out_ind) > 0:
-                            for output_index in src_prev_out_ind:
-                                multi_view_new_obj_hs = prev_hs[-1, i, output_index, :]
-                                self.frame_new_obj_hs.append(multi_view_new_obj_hs)
-
-                                multi_view_new_obj_hs_augment = prev_hs[-2, i, output_index, :]
-                                self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
-                        else:
-                            multi_view_new_obj_hs = prev_hs[-1, i, 0, :]
-                            self.frame_new_obj_hs.append(multi_view_new_obj_hs)
-
-                            multi_view_new_obj_hs_augment = prev_hs[-2, i, 0, :]
-                            self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
+                        # if len(src_prev_out_ind) > 0:
+                        #     for output_index in src_prev_out_ind:
+                        #         multi_view_new_obj_hs = prev_hs[-1, i, output_index, :]
+                        #         self.frame_new_obj_hs.append(multi_view_new_obj_hs)
+                        #
+                        #         multi_view_new_obj_hs_augment = prev_hs[-2, i, output_index, :]
+                        #         self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
+                        # else:
+                        #     multi_view_new_obj_hs = prev_hs[-1, i, 0, :]
+                        #     self.frame_new_obj_hs.append(multi_view_new_obj_hs)
+                        #
+                        #     multi_view_new_obj_hs_augment = prev_hs[-2, i, 0, :]
+                        #     self.frame_new_obj_hs_augment.append(multi_view_new_obj_hs_augment)
 
                         batch_track_ids_list = []
                         # 如果对应的匹配结果不为空,那么将对应的track id的特征值存入track pool中
@@ -255,12 +256,12 @@ class MultiViewDeformableTrack(nn.Module):
                     target["track_query_match_ids"] = torch.tensor([]).long().to(device)
 
         # TODO: 将新目标送入提取模块中
-        new_obj_features = torch.stack(self.frame_new_obj_hs)
-        new_obj_features_augment = torch.stack(self.frame_new_obj_hs_augment)
-        pred_instance_i, pred_instance_j, pred_cluster_i, pred_cluster_j = \
-            self.extractor(new_obj_features, new_obj_features_augment)
-
-        pred_cluster_ids = self.extractor.forward_cluster(new_obj_features)
+        # new_obj_features = torch.stack(self.frame_new_obj_hs)
+        # new_obj_features_augment = torch.stack(self.frame_new_obj_hs_augment)
+        # pred_instance_i, pred_instance_j, pred_cluster_i, pred_cluster_j = \
+        #     self.extractor(new_obj_features, new_obj_features_augment)
+        #
+        # pred_cluster_ids = self.extractor.forward_cluster(new_obj_features)
 
         # extractor_features = {}
         # 将所有为一类的特征放在一起
@@ -286,7 +287,7 @@ class MultiViewDeformableTrack(nn.Module):
         #
         #             num -= 1
 
-                # multi_track_query_embeds.append(merge_feature)  # 融合后的特征放入多视角目标信息中
+        # multi_track_query_embeds.append(merge_feature)  # 融合后的特征放入多视角目标信息中
 
         if len(self.track_pools) > 0:  # 对历史跟踪池信息进行融合
             for track_index, track_features in self.track_pools.items():
@@ -316,11 +317,17 @@ class MultiViewDeformableTrack(nn.Module):
         out, targets, features, memory, hs = self.deformable_detr(samples, targets, prev_features)
 
         # 将Extractor的返回值也加入out中
-        out.update(
-            {"pred_instance_i": pred_instance_i,
-             "pred_instance_j": pred_instance_j,
-             "pred_cluster_i": pred_cluster_i,
-             "pred_cluster_j": pred_cluster_j}
-        )
+        # out.update(
+        #     {"pred_instance_i": pred_instance_i,
+        #      "pred_instance_j": pred_instance_j,
+        #      "pred_cluster_i": pred_cluster_i,
+        #      "pred_cluster_j": pred_cluster_j}
+        # )
 
         return out, targets, features, memory, hs
+
+    def decoder_forward(self, samples: NestedTensor):
+        imgs, masks = samples.decompose()
+        outputs, _, features, memory, hs = self.deformable_detr(imgs)
+
+        return outputs, features, memory, hs
