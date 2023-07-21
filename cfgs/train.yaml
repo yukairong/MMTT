@@ -106,6 +106,6 @@ instance_temperature: 0.5
 cluster_temperature: 1.0
 person_num: 20
 lr_sim: 0.0003
-contrastive_batch_size: 256
+contrastive_queries_num: 10
 weight_decay_sim: 0.001
 epochs_sim: 1000
