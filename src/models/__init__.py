@@ -135,7 +135,7 @@ def build_model(args):
         postprocessors = {'bbox': PostProcess()}
 
     # instance criterion
-    instance_criterion = InstanceLoss(args.contrastive_batch_size, args.instance_temperature, device).to(device)
+    instance_criterion = InstanceLoss(args.contrastive_queries_num * args.batch_size, args.instance_temperature, device).to(device)
     cluster_criterion = ClusterLoss(args.person_num, args.cluster_temperature, device).to(device)
 
     # criterion list
