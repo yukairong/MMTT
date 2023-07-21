@@ -70,6 +70,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module, postproc
 
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
 
+
 def train_cluster_model_one_epoch(backbone: torch.nn.Module,
                                   model: torch.nn.Module,
                                   data_loader: Iterable,
@@ -91,26 +92,27 @@ def train_cluster_model_one_epoch(backbone: torch.nn.Module,
         samples = samples.to(device)
         targets = [utils.nested_dict_to_device(t, device) for t in targets]
 
-        # TODO: 添加track model的正向推理过程
+        # track model的正向推理过程
         with torch.no_grad():
-            decoder_outputs_list = backbone(samples)
+            _, _, _, hs = backbone(samples)
 
-        # TODO: 取出decoder输出,随机挑选
-        last_decoder = decoder_outputs_list[-1]
-        contrastive_decoder = decoder_outputs_list[-2]
-        num_queries = len(last_decoder)
-
-        choose_feature_index_list = torch.randperm(num_queries)[:queries_num]
+        # 取出decoder输出,随机挑选
+        last_decoder = hs[-1, :, :, :]
+        contrastive_decoder = hs[-2, :, :, :]
+        num_queries = last_decoder.shape[1]  # queries的数量
+        imgs_batch_size = last_decoder.shape[0]  # batch size
 
         optimizer.zero_grad()
 
         x_i, x_j = [], []
-        for query_index in choose_feature_index_list:
-            x_i_tmp = last_decoder[query_index]
-            x_j_tmp = contrastive_decoder[query_index]
+        for img_index in range(imgs_batch_size):
+            choose_feature_index_list = torch.randperm(num_queries)[:queries_num]
+            for query_index in choose_feature_index_list:
+                x_i_tmp = last_decoder[img_index, query_index, :]
+                x_j_tmp = contrastive_decoder[img_index, query_index, :]
 
-            x_i.append(x_i_tmp)
-            x_j.append(x_j_tmp)
+                x_i.append(x_i_tmp)
+                x_j.append(x_j_tmp)
 
         x_i = torch.stack(x_i).to(device)
         x_j = torch.stack(x_j).to(device)
@@ -130,8 +132,3 @@ def train_cluster_model_one_epoch(backbone: torch.nn.Module,
         loss_epoch += loss.item()
 
     return loss_epoch
-
-
-
-
-
