@@ -94,7 +94,7 @@ def train_cluster_model_one_epoch(backbone: torch.nn.Module,
 
         # track model的正向推理过程
         with torch.no_grad():
-            _, _, _, hs = backbone(samples)
+            _, _, _, hs = backbone.decoder_forward(samples)
 
         # 取出decoder输出,随机挑选
         last_decoder = hs[-1, :, :, :]
