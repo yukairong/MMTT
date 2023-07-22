@@ -1,3 +1,6 @@
 output_dir: null
 verbose: False
 seed: 6
+
+obj_detect_checkpoint_file: null
+train_cfg: ../cfgs/train.yaml # train config
