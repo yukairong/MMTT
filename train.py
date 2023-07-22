@@ -19,7 +19,7 @@ from src.utils.misc import nested_dict_to_namespace
 # 创建一条实验记录
 ex = sacred.Experiment('train')
 # 添加运行需要的配置文件 yaml格式
-ex.add_config('cfgs/train.yaml')
+ex.add_config('../cfgs/train.yaml')
 
 
 # 打印当前运行的参数和对应的值
