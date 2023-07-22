@@ -365,8 +365,8 @@ class MultiViewDeformableTrack(nn.Module):
                 # t-2帧时刻下的track id
                 prev_prev_track_ids = target['prev_prev_target']['track_ids']
                 for out_ind, target_ind in zip(prev_prev_out_ind, prev_prev_target_ind):
-                    obj_label = prev_prev_track_ids[target_ind] # 真实的obj标签
-                    obj_hs = prev_prev_hs[-1, i, out_ind, :]    # decoder的queries特征
+                    obj_label = prev_prev_track_ids[target_ind].item()  # 真实的obj标签
+                    obj_hs = prev_prev_hs[-1, i, out_ind, :]  # decoder的queries特征
 
                     if obj_label not in obj_hs_dict:
                         obj_hs_dict[obj_label] = [obj_hs]
@@ -379,7 +379,7 @@ class MultiViewDeformableTrack(nn.Module):
                 # t-1帧时刻下的track id
                 prev_track_ids = target['prev_target']['track_ids']
                 for out_ind, target_ind in zip(prev_out_ind, prev_target_ind):
-                    obj_label = prev_track_ids[target_ind]
+                    obj_label = prev_track_ids[target_ind].item()
                     obj_hs = prev_hs[-1, i, out_ind, :]
 
                     if obj_label not in obj_hs_dict:
@@ -393,7 +393,7 @@ class MultiViewDeformableTrack(nn.Module):
                 length_obj_hs_list = len(obj_hs_list)
                 if length_obj_hs_list >= 2:
                     choose_obj_hs_index_list = torch.randperm(length_obj_hs_list)[:2]
-                    same_obj_hs_list = obj_hs_list[choose_obj_hs_index_list]
+                    same_obj_hs_list = torch.stack(obj_hs_list)[choose_obj_hs_index_list]
 
                     x_i.append(same_obj_hs_list[0])
                     x_j.append(same_obj_hs_list[1])

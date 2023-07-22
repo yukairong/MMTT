@@ -460,6 +460,7 @@ class InstanceLoss(nn.Module):
         assert z_i.shape[0] == z_j.shape[0], "shape of z_i and z_j should be same"
 
         self.batch_size = z_i.shape[0]
+        self.mask = self.mask_correlated_samples(self.batch_size)
         N = 2 * self.batch_size
         z = torch.cat((z_i, z_j), dim=0)
 

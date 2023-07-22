@@ -93,7 +93,7 @@ def train_cluster_model_one_epoch(backbone: torch.nn.Module,
         targets = [utils.nested_dict_to_device(t, device) for t in targets]
 
         # track model的正向推理过程
-        x_i, x_j = backbone.decoder_forward(samples)
+        x_i, x_j = backbone.decoder_forward(samples, targets)
 
         optimizer.zero_grad()
 
