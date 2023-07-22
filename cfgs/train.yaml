@@ -67,7 +67,7 @@ lr_track: 0.0001
 # Segmentation
 masks: False
 # Range of possible random previous frames
-track_prev_prev_frame: False
+track_prev_prev_frame: True
 track_backprop_prev_frame: False
 lr_backbone: 0.00002  # backbone train lr
 num_feature_levels: 4 # Number of feature levels the encoder processes from the backbone
