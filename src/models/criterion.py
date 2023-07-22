@@ -456,6 +456,10 @@ class InstanceLoss(nn.Module):
         return mask
 
     def forward(self, z_i, z_j):
+        # N = 2 * self.batch_size
+        assert z_i.shape[0] == z_j.shape[0], "shape of z_i and z_j should be same"
+
+        self.batch_size = z_i.shape[0]
         N = 2 * self.batch_size
         z = torch.cat((z_i, z_j), dim=0)
 
