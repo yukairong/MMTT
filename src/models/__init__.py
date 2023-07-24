@@ -1,6 +1,6 @@
 import torch
 # from models.detr import SetCriterion
-from models.criterion import SetCriterion
+from models.criterion import SetCriterion, InstanceLoss, ClusterLoss
 from models.backbone import build_backbone
 from models.matcher import build_matcher
 from models.transformer import build_transformer
@@ -9,8 +9,11 @@ from models.deformable_transformer import build_deformable_transformer
 from models.detr import DETR, PostProcess
 from models.detr_tracking import DeformableDETRTracking, DETRTracking
 from models.deformable_detr import DeformableDETR, DeformablePostProcess
+from models.extractor import ContrastiveClusterExtractor
 
 from models.multi_view_deformable_tracking import MultiViewDeformableTrack
+
+
 def build_model(args):
     """
     构建网络模型
@@ -88,6 +91,8 @@ def build_model(args):
             else:
                 model = DETR(**mmtt_v1_kwargs)
 
+    cluster_model = ContrastiveClusterExtractor(args.hidden_dim, args.person_num)
+
     # 损失函数的构建
     weight_dict = {'loss_ce': args.cls_loss_coef,
                    'loss_bbox': args.bbox_loss_coef,
@@ -105,7 +110,8 @@ def build_model(args):
             aux_weight_dict.update({k + f'_enc': v for k, v in weight_dict.items()})
         weight_dict.update(aux_weight_dict)
 
-    losses = ['labels', 'boxes', 'cardinality', 'instances', 'clusters']
+    # losses = ['labels', 'boxes', 'cardinality', 'instances', 'clusters']
+    losses = ['labels', 'boxes', 'cardinality']
 
     criterion = SetCriterion(
         num_classes,
@@ -128,6 +134,21 @@ def build_model(args):
     else:
         postprocessors = {'bbox': PostProcess()}
 
-    return model, criterion, postprocessors
+    # instance criterion
+    instance_criterion = InstanceLoss(args.contrastive_queries_num * args.batch_size, args.instance_temperature, device).to(device)
+    cluster_criterion = ClusterLoss(args.person_num, args.cluster_temperature, device).to(device)
 
+    # criterion list
+    criterion_list = {
+        "track_criterion": criterion,
+        "instance_criterion": instance_criterion,
+        "cluster_criterion": cluster_criterion
+    }
 
+    # model list
+    model_list = {
+        "track_model": model,
+        "cluster_model": cluster_model
+    }
+
+    return model_list, criterion_list, postprocessors

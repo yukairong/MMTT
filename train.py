@@ -9,7 +9,7 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
-from src.engine import train_one_epoch
+from src.engine import train_one_epoch, train_cluster_model_one_epoch
 from src.datasets import build_dataset
 from src.models import build_model
 from src.models.transformer import test
@@ -19,7 +19,7 @@ from src.utils.misc import nested_dict_to_namespace
 # 创建一条实验记录
 ex = sacred.Experiment('train')
 # 添加运行需要的配置文件 yaml格式
-ex.add_config('cfgs/train.yaml')
+ex.add_config('../cfgs/train.yaml')
 
 
 # 打印当前运行的参数和对应的值
@@ -47,11 +47,17 @@ def train(args: Namespace) -> None:
 
     # TODO 构建模型 优化器 ....
     # ******************************* 构建模型 **************************************************************************
-    model, criterion, postprocessors = build_model(args)
-    model.to(device)
+    model_list, criterion_list, postprocessors = build_model(args)
+    track_model = model_list["track_model"].to(device)
+    cluster_model = model_list["cluster_model"].to(device)
+
+    track_criterion = criterion_list["track_criterion"]
+    instance_criterion = criterion_list["instance_criterion"]
+    cluster_criterion = criterion_list["cluster_criterion"]
 
     # 计算模型参数总量
-    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    n_parameters = sum(p.numel() for p in track_model.parameters() if p.requires_grad) + \
+                   sum(p.numel() for p in cluster_model.parameters() if p.requires_grad)
     print("NUM TRAINABLE MODEL PARAMS:", n_parameters)
 
     def match_name_keywords(n, name_keywords):
@@ -62,38 +68,45 @@ def train(args: Namespace) -> None:
                 break
         return out
 
-    param_dicts = [
-        {"params": [p for n, p in model.named_parameters()
+    track_param_dicts = [
+        {"params": [p for n, p in track_model.named_parameters()
                     if not match_name_keywords(n, args.lr_backbone_names + args.lr_linear_proj_names +
                                                ['layers_track_attention']) and p.requires_grad], "lr": args.lr, },
 
-        {"params": [p for n, p in model.named_parameters()
+        {"params": [p for n, p in track_model.named_parameters()
                     if match_name_keywords(n, args.lr_backbone_names) and p.requires_grad], "lr": args.lr_backbone},
 
-        {"params": [p for n, p in model.named_parameters()
+        {"params": [p for n, p in track_model.named_parameters()
                     if match_name_keywords(n, args.lr_linear_proj_names) and p.requires_grad],
          "lr": args.lr * args.lr_linear_proj_mult},
 
-        {"params": [p for n, p in model.named_parameters()
-                    if match_name_keywords(n, ['ContrastiveClusterExtractor']) and p.requires_grad], "lr": args.lr_sim}
+        # {"params": [p for n, p in model.named_parameters()
+        #             if match_name_keywords(n, ['ContrastiveClusterExtractor']) and p.requires_grad], "lr": args.lr_sim}
+    ]
+
+    cluster_para_dicts = [
+        {"params": [p for n, p in cluster_model.named_parameters()
+                    if match_name_keywords(n, ["ContrastiveClusterExtractor"]) and p.requires_grad],
+         "lr": args.lr_sim
+         }
     ]
 
     if args.track_attention:
-        param_dicts.append({
-            "params": [p for n, p in model.named_parameters()
+        track_param_dicts.append({
+            "params": [p for n, p in track_model.named_parameters()
                        if match_name_keywords(n, ['layers_track_attention']) and p.requires_grad], "lr": args.lr_track})
 
-    optimizer = torch.optim.AdamW(param_dicts, lr=args.lr, weight_decay=args.weight_decay)
+    track_optimizer = torch.optim.AdamW(track_param_dicts, lr=args.lr, weight_decay=args.weight_decay)
+    cluster_optimizer = torch.optim.Adam(cluster_model.parameters(), lr=args.lr_sim, weight_decay=args.weight_decay_sim)
 
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [args.lr_drop])
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(track_optimizer, [args.lr_drop])
 
     # ****************************** 构建数据集 **************************************************************************
     dataset_train = build_dataset(split='train', args=args)
-    img, target = dataset_train[0]
-    print('\n.......... for test .........\n', f'img.shape = {img.shape}, 这张图片的目标数 = ')
+    # img, target = dataset_train[0]
+    # print('\n.......... for test .........\n', f'img.shape = {img.shape}, 这张图片的目标数 = ')
 
     # dataset_val = build_dataset(split='val', args=args)
-
     if args.distributed:
         pass
         # sampler_train = utils.DistributedWeightedSampler(dataset_train)
@@ -124,31 +137,37 @@ def train(args: Namespace) -> None:
     # ****************************** 开始训练 **************************************************************************
     print('\n........start training.....\n')
     start_time = time.time()
-
+    # 训练track model
     for epoch in range(args.start_epoch, args.epochs + 1):
         # Train
         if args.distributed:
             pass
-
-        train_one_epoch(model, criterion, postprocessors, data_loader_train, optimizer, device, epoch, args)
-
+        train_one_epoch(track_model, track_criterion, postprocessors, data_loader_train, track_optimizer, device, epoch,
+                        args)
         lr_scheduler.step()
-
         checkpoint_paths = [output_dir / 'checkpoint.pth']
-
         # model saving
         if args.output_dir:
             if args.save_model_interval and not epoch % args.save_model_interval:
                 checkpoint_paths.append(output_dir / f"checkpoint_epoch_{epoch}.pth")
-
             for checkpoint_path in checkpoint_paths:
                 misc.save_on_master({
-                    "model": model.state_dict(),
-                    "optimizer": optimizer.state_dict(),
+                    "model": track_model.state_dict(),
+                    "optimizer": track_optimizer.state_dict(),
                     "lr_scheduler": lr_scheduler.state_dict(),
                     "epoch": epoch,
                     "args": args,
                 }, checkpoint_path)
+
+    for cluster_epoch in range(args.start_epoch, args.epochs_sim + 1):
+        if args.distributed:
+            pass
+        epoch_loss = train_cluster_model_one_epoch(track_model, cluster_model, data_loader_train,
+                                                   instance_criterion, cluster_criterion, cluster_optimizer,
+                                                   device, cluster_epoch, args.contrastive_queries_num)
+        print(f"Epoch[{cluster_epoch}/{args.epochs_sim}]   Loss: {epoch_loss / len(data_loader_train)}")
+    # # TODO：保存cluster model
+
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))

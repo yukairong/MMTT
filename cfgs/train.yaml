@@ -51,8 +51,8 @@ train_split: wildtrack_train_coco
 val_split: Wildtrack_train_cross_val_frame_0_5_to_1_0_coco
 dataset: 'wildTrack'
 
-#wildtrack_path_train: 'D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset'  # train dataset root (kongcheng)
-wildtrack_path_train: 'D:\dataset\MOT\Wildtrack_dataset'  # train dataset root (fancy)
+wildtrack_path_train: 'D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset'  # train dataset root (kongcheng)
+#wildtrack_path_train: 'D:\dataset\MOT\Wildtrack_dataset'  # train dataset root (fancy)
 mot_path_val: 'D:\datasets\MOT\Wildtrack_dataset\wildtrack_val_coco' # valid dataset root
 track_prev_frame_rnd_augs: 0.01 # crop augment
 track_prev_frame_range: 5 #  Range of possible random previous frames
@@ -67,7 +67,7 @@ lr_track: 0.0001
 # Segmentation
 masks: False
 # Range of possible random previous frames
-track_prev_prev_frame: False
+track_prev_prev_frame: True
 track_backprop_prev_frame: False
 lr_backbone: 0.00002  # backbone train lr
 num_feature_levels: 4 # Number of feature levels the encoder processes from the backbone
@@ -104,5 +104,8 @@ debug: False
 # ######## contrastive params ######
 instance_temperature: 0.5
 cluster_temperature: 1.0
-person_num: 1000
+person_num: 20
 lr_sim: 0.0003
+contrastive_queries_num: 10
+weight_decay_sim: 0.001
+epochs_sim: 1000
