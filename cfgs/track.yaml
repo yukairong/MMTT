@@ -1,3 +1,19 @@
-output_dir: null
+####### result save ##########
+
+# compile video with: `ffmpeg -f image2 -framerate 15 -i %06d.jpg -vcodec libx264 -y movie.mp4 -vf scale=320:-1`
+write_image: False  # [False, 'debug', 'pretty'] add boxes on image for each frame
+output_dir: H:\py_pro\MMTT\eval_output  # save results in this directory
+
+####### init ########
+seed: 666
+
+
+####### model info ########
+# train_best_model path
+obj_detect_checkpoint_file: H:\py_pro\MMTT\pre_model\WildTrack\checkpoint_epoch_15.pth
 verbose: False
-seed: 6
+
+
+###### dataset ######
+dataset_name: WildTrack
+data_root_dir: D:\dataset\MOT

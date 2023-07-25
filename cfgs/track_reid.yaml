@@ -1,2 +1,2 @@
 tracker_cfg:
-  inactive_patience: 5
+  inactive_patience: 5 # if object missed in 5 frames, we will remove this track(terminate)
