@@ -49,6 +49,17 @@ class Model(nn.Module):
         h = self.sage(g, x)
         return self.pred(g, h)
 
+def evaluate(model, graph, features, labels, mask):
+    model.eval()
+    with torch.no_grad():
+        logits = model(graph, features)
+        logits = logits[mask]
+        labels = labels[mask]
+        indices = torch.round(logits)
+        # _, indices = torch.max(logits, dim=1)
+        correct = torch.sum(indices == labels)
+        return correct.item() * 1.0 / len(labels)
+
 if __name__ == '__main__':
     src = np.random.randint(0, 100, 500)
     dst = np.random.randint(0, 100, 500)
@@ -57,21 +68,25 @@ if __name__ == '__main__':
     # 建立点和边特征,以及边的标签
     edge_pred_graph.ndata['feature'] = torch.randn(100, 10)
     # edge_pred_graph.edata['feature'] = torch.randn(1000, 10)
-    edge_pred_graph.edata['label'] = torch.randint(0, 1, size=(1000,))
+    edge_pred_graph.edata['label'] = torch.randint(0, 2, size=(1000,))
     # 进行训练、验证和测试集划分
     edge_pred_graph.edata['train_mask'] = torch.zeros(1000, dtype=torch.bool).bernoulli(0.6)
+    edge_pred_graph.edata['val_mask'] = torch.zeros(1000, dtype=torch.bool).bernoulli(0.2)
 
     node_features = edge_pred_graph.ndata["feature"]
     edge_label = edge_pred_graph.edata['label']
     train_mask = edge_pred_graph.edata['train_mask']
+    valid_mask = edge_pred_graph.edata['val_mask']
 
     model = Model(10, 20, 5, 1)
     opt = torch.optim.Adam(model.parameters())
     for epoch in range(1000):
         pred = model(edge_pred_graph, node_features)
         loss = ((pred[train_mask] - edge_label[train_mask]) ** 2).mean()
+
+        acc = evaluate(model, edge_pred_graph, node_features, edge_label, valid_mask)
         opt.zero_grad()
         loss.backward()
         opt.step()
 
-        print(loss.item())
+        print(f"loss: {loss.item()}\t acc: {acc}")
