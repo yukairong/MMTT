@@ -44,6 +44,14 @@ def build_model(args):
         "track_query_false_negative_prob": args.track_query_false_negative_prob,
         "matcher": matcher,
         "backprop_prev_frame": args.track_backprop_prev_frame,
+
+        "gnn_hidden_feats": args.gnn_hidden_feats,
+        "gnn_out_feats": args.gnn_out_feats,
+        "gnn_edge_classes": args.gnn_edge_classes,
+        "gnn_n_layers": args.gnn_n_layers,
+        "gnn_activation": args.gnn_activation,
+        "gnn_dropout": args.gnn_dropout,
+        "gnn_aggregator": args.gnn_aggregator
     }
 
     if args.deformable:
