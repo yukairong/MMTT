@@ -109,3 +109,12 @@ lr_sim: 0.0003
 contrastive_queries_num: 10
 weight_decay_sim: 0.001
 epochs_sim: 1000
+
+# ######## gnn config ###########
+gnn_hidden_feats: 512
+gnn_out_feats: 256
+gnn_edge_classes: 1
+gnn_n_layers: 3
+gnn_activation: 'relu'
+gnn_dropout: 0.1
+gnn_aggregator: 'mean'
