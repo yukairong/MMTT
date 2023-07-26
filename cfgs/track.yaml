@@ -1,8 +1,11 @@
 ####### result save ##########
-
+result_path: H:\py_pro\MMTT\eval_output\WildTrack.txt  # the results have been generated before
 # compile video with: `ffmpeg -f image2 -framerate 15 -i %06d.jpg -vcodec libx264 -y movie.mp4 -vf scale=320:-1`
 write_image: False  # [False, 'debug', 'pretty'] add boxes on image for each frame
+# Maps are only visualized if write_images is True
+generate_attention_maps: False
 output_dir: H:\py_pro\MMTT\eval_output  # save results in this directory
+save_txt_path: H:\py_pro\MMTT\eval_output\WildTrack.txt
 
 ####### init ########
 seed: 666
@@ -17,3 +20,29 @@ verbose: False
 ###### dataset ######
 dataset_name: WildTrack
 data_root_dir: D:\dataset\MOT
+
+
+###### Tracker config ######
+tracker_cfg:
+  # [False, 'center_distance', 'min_iou_0_5']
+  public_detections: False
+  # score threshold for detections
+  detection_obj_score_thresh: 0.4
+  # score threshold for keeping the track alive
+  track_obj_score_thresh: 0.4
+  # NMS threshold for detection
+  detection_nms_thresh: 0.9
+  # NMS theshold while tracking
+  track_nms_thresh: 0.9
+  # number of consective steps a score has to be below track_obj_score_thresh for a track to be terminated
+  steps_termination: 1
+  # distance of previous frame for multi-frame attention
+  prev_frame_dist: 1
+  # How many timesteps inactive tracks are kept and cosidered for reid
+  inactive_patience: -1
+  # How similar do image and old track need to be to be considered the same person
+  reid_sim_threshold: 0.0
+  reid_sim_only: false
+  reid_score_thresh: 0.4
+  reid_greedy_matching: false
+

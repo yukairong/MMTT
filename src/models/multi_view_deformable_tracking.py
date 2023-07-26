@@ -1,17 +1,13 @@
 import copy
 import math
-import random
 from contextlib import nullcontext
 
 import torch
 from torch import nn
-from torch.nn.init import constant_, normal_, xavier_uniform_
 
-from src.utils.misc import NestedTensor, nested_tensor_from_tensor_list
-
-from models.matcher import HungarianMatcher
 from models.deformable_detr import DeformableDETR
 from models.extractor import ContrastiveClusterExtractor
+from src.utils.misc import NestedTensor
 
 
 class MultiViewDeformableTrack(nn.Module):
@@ -402,3 +398,20 @@ class MultiViewDeformableTrack(nn.Module):
             obj_features_j = torch.stack(x_j)
 
             return obj_features_i, obj_features_j
+
+    def inference(self, samples: NestedTensor, targets: list = None, prev_features=None):
+        # if targets is None:
+        #     # prev_targets = [target['prev_target'] for target in targets]
+        #     for target in targets:
+        #         device = 'cuda'
+        #
+        #         target['track_query_hs_embeds'] = torch.zeros(0, self.deformable_detr.hidden_dim).float().to(device)
+        #         # target['track_queries_placeholder_mask'] = torch.zeros(self.num_queries).bool().to(device)
+        #         target['track_queries_mask'] = torch.zeros(self.deformable_detr.num_queries).bool().to(device)
+        #         target['track_queries_fal_pos_mask'] = torch.zeros(self.deformable_detr.num_queries).bool().to(device)
+        #         target['track_query_boxes'] = torch.zeros(0, 4).to(device)
+        #         target['track_query_match_ids'] = torch.tensor([]).long().to(device)
+
+        out, targets, features, memory, hs = self.deformable_detr(samples, targets, prev_features)
+
+        return out, targets, features, memory, hs
