@@ -7,6 +7,21 @@ import torch.nn.functional as F
 from dgl.nn.pytorch import SAGEConv
 from torch.utils.data import DataLoader
 
+def _get_activation_fn(activation):
+    """
+        Return an activation function given a string
+    :param activation:
+    :return:
+    """
+
+    if activation == "relu":
+        return F.relu
+    if activation == "gelu":
+        return F.gelu
+    if activation == "glu":
+        return F.glu
+    raise RuntimeError(f"activation should be relu/gelu, not {activation}.")
+
 class GraphSAGE(nn.Module):
     def __init__(self,
                  in_feats,
@@ -29,7 +44,7 @@ class GraphSAGE(nn.Module):
             self.layer.append(SAGEConv(n_hidden, n_hidden, aggregator))
         self.layer.append(SAGEConv(n_hidden, out_feats, aggregator))
         self.dropout = nn.Dropout(dropout)
-        self.activation = activation
+        self.activation = _get_activation_fn(activation)
 
     def forward(self, g, blocks, feas):
         h = feas
