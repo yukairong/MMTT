@@ -1,5 +1,5 @@
 import dgl
-import dgl.nn as dlgnn
+import dgl.nn.pytorch as dlgnn
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
