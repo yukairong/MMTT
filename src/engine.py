@@ -132,7 +132,7 @@ def train_gnn_model_one_epoch(track_model: torch.nn.Module,
     for i, (samples, targets) in enumerate(data_loader):
         samples = samples.to(device)
         targets = [utils.nested_dict_to_device(t, device) for t in targets]
-        out, targets, features, memory, hs = track_model.inference(samples)
+        out, _, features, memory, hs = track_model.inference(samples)
         outputs_without_aux = {
             k: v for k, v in out.items() if 'aux_outputs' not in k
         }
@@ -142,9 +142,9 @@ def train_gnn_model_one_epoch(track_model: torch.nn.Module,
         node_num = 0  # 节点总数
         for j, (target, indice) in enumerate(zip(targets, indices)):
             out_ind, target_ind = indice
-            for out_ind, target_ind in zip(out_ind, target_ind):
-                obj_feat = hs[-1, i, out_ind, :]
-                obj_label = target['track_ids'][target_ind]
+            for out_i, target_i in zip(out_ind, target_ind):
+                obj_feat = hs[-1, j, out_i, :]
+                obj_label = target['track_ids'][target_i]
 
                 if j not in frame_obj:
                     frame_obj[j] = {
@@ -168,10 +168,10 @@ def train_gnn_model_one_epoch(track_model: torch.nn.Module,
                 src.append(src_node_id)
                 dst.append(dst_node_id)
 
-        graph = dgl.graph((src, dst))
+        graph = dgl.graph((src, dst)).to(device)
 
-        node_features = torch.zeros(size=(node_num, gnn_model.in_feats))  # 存储每个节点的特征
-        edge_label = torch.zeros(size=(np.arange(node_objs).sum(),))
+        node_features = torch.zeros(size=(node_num, gnn_model.in_feats)).to(device)  # 存储每个节点的特征
+        edge_label = torch.zeros(size=(np.arange(node_num).sum() * 2,)).to(device)
         # 将所有视角上的目标都放置在一张图中
         for edge_indx, (src_node_id, dst_node_id) in enumerate(zip(src, dst)):  # 遍历每个edge的两个端点
             src_node_label = -1  # 起始node的标签
