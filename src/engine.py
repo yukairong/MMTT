@@ -201,6 +201,8 @@ def train_gnn_model_one_epoch(track_model: torch.nn.Module,
         optimizer.step()
 
         loss_epoch += loss.item()
-        print(f"Epoch: {epoch} \t loss: {loss.item()}")
+        if i % 100 == 0:
+            print(
+                f"Epoch: {epoch} \t Iter:[{i}/{len(data_loader)}] \t Loss: {loss.item()}")
 
     return loss_epoch
