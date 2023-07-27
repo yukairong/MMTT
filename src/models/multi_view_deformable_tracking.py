@@ -7,6 +7,7 @@ from torch import nn
 
 from models.deformable_detr import DeformableDETR
 from models.extractor import ContrastiveClusterExtractor
+from models.graphSAGE import GraphSAGE
 from src.utils.misc import NestedTensor
 
 
@@ -15,7 +16,11 @@ class MultiViewDeformableTrack(nn.Module):
     def __init__(self, kwargs):
         super().__init__()
         self.deformable_detr = DeformableDETR(**kwargs)
-        self.extractor = ContrastiveClusterExtractor(self.deformable_detr.hidden_dim, kwargs["person_num"])
+        # self.extractor = ContrastiveClusterExtractor(self.deformable_detr.hidden_dim, kwargs["person_num"])
+        self.extractor = GraphSAGE(in_feats=self.deformable_detr.hidden_dim, n_hidden=kwargs['gnn_hidden_feats'],
+                                   out_feats=kwargs['gnn_out_feats'], n_classes=kwargs['gnn_edge_classes'],
+                                   n_layers=kwargs['gnn_n_layers'], activation=kwargs['gnn_activation'],
+                                   dropout=kwargs['gnn_dropout'], aggregator=kwargs['gnn_aggregator'])
         # 融合模块
         self.merge_module = nn.Conv2d(self.deformable_detr.hidden_dim * 2, self.deformable_detr.hidden_dim,
                                       kernel_size=1)
@@ -29,6 +34,8 @@ class MultiViewDeformableTrack(nn.Module):
         self.frame_new_obj_hs = []  # 存储t帧下各个视角认为可能的新对象
         self.frame_new_obj_hs_augment = []  # 存储t帧下其他decoder可能新对象的特征
 
+        self.frame_obj = {} # 存储t帧下每个视角的对象特征以及真实track id
+
     def train(self, mode: bool = True):
         self._tracking = False
         return super().train(mode)
@@ -40,6 +47,7 @@ class MultiViewDeformableTrack(nn.Module):
     def _frame_reset(self):
         self.frame_new_obj_hs = []
         self.frame_new_obj_hs_augment = []
+        self.frame_obj = {}
 
     def forward(self, samples: NestedTensor, targets: list = None, prev_features=None):
         # 清空frame_new_obj特征
@@ -104,6 +112,21 @@ class MultiViewDeformableTrack(nn.Module):
                         # prev_out_ind: decoder输出的300个query中,作为输出目标对应的id数 [0, 300)
                         # prev_target_ind: 匈牙利匹配得到的 标注文件对应的track_id的值索引
                         prev_out_ind, prev_target_ind = prev_ind
+
+                        # 将目标放入frame_obj中
+                        for out_ind, target_ind in zip(prev_out_ind, prev_target_ind):
+                            obj_feat = prev_hs[-1, i, out_ind, :]   # 目标的特征
+                            obj_label = target['prev_target']['track_ids'][target_ind]  # 目标的track id
+
+                            if i not in self.frame_obj:
+                                self.frame_obj[i] = {
+                                    'features': [],
+                                    'labels': []
+                                }
+                            self.frame_obj[i]['features'].append(obj_feat)
+                            self.frame_obj[i]['labels'].append(obj_label)
+
+
                         src_prev_out_ind = copy.deepcopy(prev_out_ind)
                         # random subset
                         if self._track_query_false_negative_prob:
@@ -132,7 +155,7 @@ class MultiViewDeformableTrack(nn.Module):
 
                         target["track_query_match_ids"] = target_ind_matched_idx  # t帧和t-1帧匹配的track ID索引
 
-                        # TODO：取出matched的特征,并把track query部分放入历史存储池中
+                        # 取出matched的特征,并把track query部分放入历史存储池中
                         # prev_out_ind = prev_out_ind.cpu()
                         matched_idx_list = prev_out_ind[target_ind_matching.cpu()]  # 匹配到的对应的track id在预测输出的序号列表
                         new_obj_ind_matching = [i for i in src_prev_out_ind if
@@ -141,7 +164,7 @@ class MultiViewDeformableTrack(nn.Module):
                         # new_obj_matched_idx_list = prev_out_ind[new_obj_ind_matching]   # 匹配到的新的object id再预测输出的序号列表
 
                         # 如果对应的新obj结果不为空,那么将对应的object id的特征值存入
-                        # TODO：将认为可能是新目标的特征存储起来
+                        # 将认为可能是新目标的特征存储起来
                         # if len(new_obj_matched_idx_list) > 0:
                         # for output_index in new_obj_matched_idx_list:
                         #     # 第6层decoder输出特征

@@ -9,7 +9,7 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
-from src.engine import train_one_epoch, train_cluster_model_one_epoch
+from src.engine import train_one_epoch, train_cluster_model_one_epoch, train_gnn_model_one_epoch
 from src.datasets import build_dataset
 from src.models import build_model
 from src.models.transformer import test
@@ -19,7 +19,7 @@ from src.utils.misc import nested_dict_to_namespace
 # 创建一条实验记录
 ex = sacred.Experiment('train')
 # 添加运行需要的配置文件 yaml格式
-ex.add_config('../cfgs/train.yaml')
+ex.add_config('cfgs/train.yaml')
 
 
 # 打印当前运行的参数和对应的值
@@ -50,14 +50,17 @@ def train(args: Namespace) -> None:
     model_list, criterion_list, postprocessors = build_model(args)
     track_model = model_list["track_model"].to(device)
     cluster_model = model_list["cluster_model"].to(device)
+    gnn_model = model_list["gnn_model"].to(device)
 
     track_criterion = criterion_list["track_criterion"]
     instance_criterion = criterion_list["instance_criterion"]
     cluster_criterion = criterion_list["cluster_criterion"]
+    gnn_criterion = criterion_list["gnn_criterion"]
 
     # 计算模型参数总量
     n_parameters = sum(p.numel() for p in track_model.parameters() if p.requires_grad) + \
-                   sum(p.numel() for p in cluster_model.parameters() if p.requires_grad)
+                   sum(p.numel() for p in gnn_model.parameters() if p.requires_grad)
+    # sum(p.numel() for p in cluster_model.parameters() if p.requires_grad)
     print("NUM TRAINABLE MODEL PARAMS:", n_parameters)
 
     def match_name_keywords(n, name_keywords):
@@ -98,6 +101,7 @@ def train(args: Namespace) -> None:
 
     track_optimizer = torch.optim.AdamW(track_param_dicts, lr=args.lr, weight_decay=args.weight_decay)
     cluster_optimizer = torch.optim.Adam(cluster_model.parameters(), lr=args.lr_sim, weight_decay=args.weight_decay_sim)
+    gnn_optimizer = torch.optim.Adam(gnn_model.parameters(), lr=args.gnn_lr)
 
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(track_optimizer, [args.lr_drop])
 
@@ -159,15 +163,22 @@ def train(args: Namespace) -> None:
                     "args": args,
                 }, checkpoint_path)
 
-    for cluster_epoch in range(args.start_epoch, args.epochs_sim + 1):
+    # for cluster_epoch in range(args.start_epoch, args.epochs_sim + 1):
+    #     if args.distributed:
+    #         pass
+    #     epoch_loss = train_cluster_model_one_epoch(track_model, cluster_model, data_loader_train,
+    #                                                instance_criterion, cluster_criterion, cluster_optimizer,
+    #                                                device, cluster_epoch, args.contrastive_queries_num)
+    #     print(f"Epoch[{cluster_epoch}/{args.epochs_sim}]   Loss: {epoch_loss / len(data_loader_train)}")
+    # # # TODO：保存cluster model
+
+    # TODO：GNN目标交互匹配学习
+    for gnn_epoch in range(args.start_epoch, args.gnn_epochs + 1):
         if args.distributed:
             pass
-        epoch_loss = train_cluster_model_one_epoch(track_model, cluster_model, data_loader_train,
-                                                   instance_criterion, cluster_criterion, cluster_optimizer,
-                                                   device, cluster_epoch, args.contrastive_queries_num)
-        print(f"Epoch[{cluster_epoch}/{args.epochs_sim}]   Loss: {epoch_loss / len(data_loader_train)}")
-    # # TODO：保存cluster model
-
+        epoch_loss = train_gnn_model_one_epoch(track_model, gnn_model, data_loader_train,
+                                               gnn_criterion, gnn_optimizer, device, gnn_epoch)
+        print(f"Epoch[{gnn_epoch}/{args.gnn_epochs}]\t Loss:{epoch_loss / len(data_loader_train)}")
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))

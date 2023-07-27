@@ -433,6 +433,7 @@ class SetCriterion(nn.Module):
 
         return losses
 
+
 # contrastive loss
 class InstanceLoss(nn.Module):
 
@@ -477,6 +478,7 @@ class InstanceLoss(nn.Module):
         loss /= N
 
         return loss
+
 
 class ClusterLoss(nn.Module):
     def __init__(self, class_num, temperature, device):
@@ -526,3 +528,13 @@ class ClusterLoss(nn.Module):
         loss /= N
 
         return loss + ne_loss
+
+
+class GnnMSELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, pred, target):
+        loss = ((pred - target) ** 2).mean()
+
+        return loss

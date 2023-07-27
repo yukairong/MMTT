@@ -4,10 +4,11 @@ import os
 import sys
 from typing import Iterable
 
+import dgl
+import numpy as np
 import torch
 
 from src.utils import misc as utils
-
 from .datasets import get_coco_api_from_dataset
 
 
@@ -113,5 +114,93 @@ def train_cluster_model_one_epoch(backbone: torch.nn.Module,
             f"  -loss_cluster: {loss_cluster.item()}"
         )
         loss_epoch += loss.item()
+
+    return loss_epoch
+
+
+def train_gnn_model_one_epoch(track_model: torch.nn.Module,
+                              gnn_model: torch.nn.Module,
+                              data_loader: Iterable,
+                              criterion: torch.nn.Module,
+                              optimizer: torch.optim.Optimizer,
+                              device: torch.device,
+                              epoch: int):
+    track_model.eval()
+    gnn_model.train()
+    criterion.train()
+    loss_epoch = 0
+    for i, (samples, targets) in enumerate(data_loader):
+        samples = samples.to(device)
+        targets = [utils.nested_dict_to_device(t, device) for t in targets]
+        out, targets, features, memory, hs = track_model.inference(samples)
+        outputs_without_aux = {
+            k: v for k, v in out.items() if 'aux_outputs' not in k
+        }
+        indices = track_model._matcher(outputs_without_aux, targets)
+
+        frame_obj = {}  # 存储t帧下每个视角的对象特征以及真实track id
+        node_num = 0  # 节点总数
+        for j, (target, indice) in enumerate(zip(targets, indices)):
+            out_ind, target_ind = indice
+            for out_ind, target_ind in zip(out_ind, target_ind):
+                obj_feat = hs[-1, i, out_ind, :]
+                obj_label = target['track_ids'][target_ind]
+
+                if j not in frame_obj:
+                    frame_obj[j] = {
+                        'features': [],
+                        'labels': [],
+                        'node_id': []
+                    }
+                frame_obj[j]['features'].append(obj_feat)
+                frame_obj[j]['labels'].append(obj_label)
+                frame_obj[j]['node_id'].append(node_num)
+                node_num += 1
+
+        src = []  # 节点起始位
+        dst = []  # 节点终点位
+        node_objs = np.arange(node_num)  # 所有的节点id
+        # 构建全连接的节点图
+        for src_node_id in node_objs:
+            for dst_node_id in node_objs:
+                if src_node_id == dst_node_id:
+                    continue
+                src.append(src_node_id)
+                dst.append(dst_node_id)
+
+        graph = dgl.graph((src, dst))
+
+        node_features = torch.zeros(size=(node_num, gnn_model.in_feats))  # 存储每个节点的特征
+        edge_label = torch.zeros(size=(np.arange(node_objs).sum(),))
+        # 将所有视角上的目标都放置在一张图中
+        for edge_indx, (src_node_id, dst_node_id) in enumerate(zip(src, dst)):  # 遍历每个edge的两个端点
+            src_node_label = -1  # 起始node的标签
+            dst_node_label = -1  # 终点node的标签
+            for value in frame_obj.values():
+                if src_node_id in value['node_id']:  # 起始点
+                    index = value['node_id'].index(src_node_id)
+                    src_node_label = value['labels'][index]
+                    if node_features[src_node_id, :].sum() == 0:
+                        node_features[src_node_id, :] = value['features'][index]  # 更新该节点特征信息
+                if dst_node_id in value['node_id']:
+                    index = value['node_id'].index(dst_node_id)
+                    dst_node_label = value['labels'][index]
+                    if node_features[dst_node_id, :].sum() == 0:
+                        node_features[dst_node_id, :] = value['features'][index]
+            if src_node_id != -1 and dst_node_label != -1 and src_node_label == dst_node_label:
+                edge_label[edge_indx] = 1  # 将该edge设置为1，表示这两个目标为同一个
+
+        graph.ndata['feature'] = node_features
+        graph.edata['label'] = edge_label
+
+        pred = gnn_model(graph, [graph for i in range(gnn_model.n_layers)], node_features)
+        loss = criterion(pred, edge_label)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        loss_epoch += loss.item()
+        print(f"Epoch: {epoch} \t loss: {loss.item()}")
 
     return loss_epoch
