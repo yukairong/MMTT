@@ -99,6 +99,7 @@ def generate_coco_from_wildtrack_views(data_root=None, split_name=None,
         for img_dict in annotations['images']
     }
     for seq_id, seq in enumerate(seqs):
+        annotations['annotations'] = []
         annotation_id = 0   # 每个视角下的标注id
         # wildtrack数据集的标注信息文件路径
         annotation_data_dir = os.path.join(data_root, "annotations_positions")
