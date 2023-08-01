@@ -71,6 +71,7 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
     annotations['frame_range'] = frame_range  # 将frame_range信息保存到标注信息的frame_range中
     print(split_name, seqs)
 
+    views_first_frame_img_id = {}
     # 对每个视角下的所有图片进行处理
     for view_id, seq in enumerate(seqs):
         # WildTrack数据集中并没有config文件,需要手动输入
@@ -96,6 +97,7 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
             # 标记第一帧的图像id
             if i == 0:
                 first_frame_image_id = img_id
+                views_first_frame_img_id[seq] = first_frame_image_id
 
             assert first_frame_image_id >= 0, "没有找到第一帧图片id"
 
@@ -116,6 +118,9 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
             # 如果出现报错，请以管理员身份进行运行
             os.symlink(os.path.join(imgs_data_root, seq, img),
                        os.path.join(coco_dir, f"{seq}_{img}"))
+
+    for anno_imgs in annotations['images']:
+        anno_imgs['views_frame_image_ids'] = views_first_frame_img_id
 
     # 对标注信息进行处理
     annotation_id = 0
