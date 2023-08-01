@@ -77,7 +77,8 @@ def generate_coco_from_wildtrack_views(data_root=None, split_name=None,
             assert first_frame_image_id >= 0, "not found the first img's id"
 
             annotations['images'].append({
-                'file_name': f'{seq}_{img}',
+                'file_full_name': f'{seq}_{img}',
+                'file_name': f'{img}',
                 'height': img_height,
                 'width': img_width,
                 'id': img_id,
@@ -94,7 +95,7 @@ def generate_coco_from_wildtrack_views(data_root=None, split_name=None,
 
     # 对标注信息进行处理
     img_file_name_to_id = {
-        img_dict['file_name']: img_dict['id']
+        img_dict['file_full_name']: img_dict['id']
         for img_dict in annotations['images']
     }
     for seq_id, seq in enumerate(seqs):
