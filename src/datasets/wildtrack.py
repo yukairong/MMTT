@@ -94,29 +94,75 @@ class WildTrackDataset(CocoDetection):
 
         img, target = self._getitem_from_id(idx, random_state, random_jitter=False)
 
-        if self._prev_frame:
-            frame_id = self.coco.imgs[idx]['frame_id']
+        # ############# 修改部分 ######################
+        view_id = img['view_id'] + 1   # 获取当前图像的视角
+        frame_offset = img['frame_id']  # 获取当前图像所在视角的帧数量
+        views_frame_image_ids = img['views_frame_image_ids']    # 获取每个视角第一帧图像id
 
-            # 如果当前帧有prev_image，就从一定范围内获取前一帧 eg，t-5，并防止越界
-            prev_frame_id = random.randint(
-                max(0, frame_id - self._prev_frame_range),
-                min(frame_id + self._prev_frame_range, self.seq_length(idx) - 1))
-            prev_image_id = self.coco.imgs[idx]['first_frame_image_id'] + prev_frame_id
+        views_img_ids = [idx]
+        for view_name, view_first_frame_img_id in views_frame_image_ids.items():
+            if f"C{str(view_id)}" == view_name:
+                continue
+            views_img_ids.append(view_first_frame_img_id + frame_offset)
 
-            prev_img, prev_target = self._getitem_from_id(prev_image_id, random_state)
-            target[f'prev_image'] = prev_img
-            target[f'prev_target'] = prev_target
+        res_img_list = []
+        res_target_list = []
 
-            if self._prev_prev_frame:
-                # PREV PREV frame equidistant as prev_frame
-                prev_prev_frame_id = min(max(0, prev_frame_id + prev_frame_id - frame_id), self.seq_length(idx) - 1)
-                prev_prev_image_id = self.coco.imgs[idx]['first_frame_image_id'] + prev_prev_frame_id
+        for view_img_id in views_img_ids:
+            img, target = self._getitem_from_id(view_img_id, random_state, random_jitter=False)
 
-                prev_prev_img, prev_prev_target = self._getitem_from_id(prev_prev_image_id, random_state)
-                target[f'prev_prev_image'] = prev_prev_img
-                target[f'prev_prev_target'] = prev_prev_target
+            if self._prev_frame:
+                frame_id = self.coco.imgs[view_img_id]['frame_id']
 
-        return img, target
+                # 如果当前帧有prev_image，就从一定范围内获取前一帧 eg，t-5，并防止越界
+                prev_frame_id = random.randint(
+                    max(0, frame_id - self._prev_frame_range),
+                    min(frame_id + self._prev_frame_range, self.seq_length(view_img_id) - 1))
+                prev_image_id = self.coco.imgs[view_img_id]['first_frame_image_id'] + prev_frame_id
+
+                prev_img, prev_target = self._getitem_from_id(prev_image_id, random_state)
+                target[f'prev_image'] = prev_img
+                target[f'prev_target'] = prev_target
+
+                if self._prev_prev_frame:
+                    # PREV PREV frame equidistant as prev_frame
+                    prev_prev_frame_id = min(max(0, prev_frame_id + prev_frame_id - frame_id),
+                                             self.seq_length(view_img_id) - 1)
+                    prev_prev_image_id = self.coco.imgs[view_img_id]['first_frame_image_id'] + prev_prev_frame_id
+
+                    prev_prev_img, prev_prev_target = self._getitem_from_id(prev_prev_image_id, random_state)
+                    target[f'prev_prev_image'] = prev_prev_img
+                    target[f'prev_prev_target'] = prev_prev_target
+
+            res_img_list.append(img)
+            res_target_list.append(target)
+
+        return res_img_list, res_target_list
+        # ############# 修改部分 ######################
+
+        # if self._prev_frame:
+        #     frame_id = self.coco.imgs[idx]['frame_id']
+        #
+        #     # 如果当前帧有prev_image，就从一定范围内获取前一帧 eg，t-5，并防止越界
+        #     prev_frame_id = random.randint(
+        #         max(0, frame_id - self._prev_frame_range),
+        #         min(frame_id + self._prev_frame_range, self.seq_length(idx) - 1))
+        #     prev_image_id = self.coco.imgs[idx]['first_frame_image_id'] + prev_frame_id
+        #
+        #     prev_img, prev_target = self._getitem_from_id(prev_image_id, random_state)
+        #     target[f'prev_image'] = prev_img
+        #     target[f'prev_target'] = prev_target
+        #
+        #     if self._prev_prev_frame:
+        #         # PREV PREV frame equidistant as prev_frame
+        #         prev_prev_frame_id = min(max(0, prev_frame_id + prev_frame_id - frame_id), self.seq_length(idx) - 1)
+        #         prev_prev_image_id = self.coco.imgs[idx]['first_frame_image_id'] + prev_prev_frame_id
+        #
+        #         prev_prev_img, prev_prev_target = self._getitem_from_id(prev_prev_image_id, random_state)
+        #         target[f'prev_prev_image'] = prev_prev_img
+        #         target[f'prev_prev_target'] = prev_prev_target
+        #
+        # return img, target
 
     def write_result_files(self, results, output_dir):
         """Write the detections in the format for the MOT17Det sumbission
