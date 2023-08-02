@@ -203,6 +203,15 @@ class ConvertCocoPolysToMask(object):
         target["orig_size"] = torch.as_tensor([int(h), int(w)])
         target["size"] = torch.as_tensor([int(h), int(w)])
 
+        view_id = torch.tensor([obj["view_id"] for obj in anno])
+        target["view_id"] = view_id[keep]
+
+        # target["frame_id"] = torch.tensor([obj["frame_id"] for obj in anno])[keep]
+        views_frame_image_ids = anno[0]["views_frame_image_ids"]
+        for view_name, view_first_frame_id in views_frame_image_ids.items():
+            views_frame_image_ids[view_name] = torch.tensor(view_first_frame_id)
+        target["views_frame_image_ids"] = views_frame_image_ids
+
         return image, target
 
 

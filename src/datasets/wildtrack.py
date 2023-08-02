@@ -2,7 +2,6 @@ import csv
 import os
 import random
 from pathlib import Path
-import random
 
 import torch
 
@@ -12,8 +11,6 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # *********************************************************************************************************************
-
-
 def build_wildtrack(image_set, args):
     """
     构建 wildtrack 数据集
@@ -95,20 +92,16 @@ class WildTrackDataset(CocoDetection):
             'random': random.getstate(),
             'torch': torch.random.get_rng_state()}
 
-        img, target = self._getitem_from_id(
-            idx, random_state, random_jitter=False)
+        img, target = self._getitem_from_id(idx, random_state, random_jitter=False)
 
         # ############# 修改部分 ######################
-        view_id = target['view_id'][0] + 1   # 获取当前图像的视角
-        # 获取每个视角第一帧图像id
-        views_frame_image_ids = target['views_frame_image_ids']
-
-        # 获取当前图像所在视角的帧数量
-        frame_offset = int(target['image_id'].cpu().numpy()) % 400
+        view_id = img['view_id'] + 1   # 获取当前图像的视角
+        frame_offset = img['frame_id']  # 获取当前图像所在视角的帧数量
+        views_frame_image_ids = img['views_frame_image_ids']    # 获取每个视角第一帧图像id
 
         views_img_ids = [idx]
         for view_name, view_first_frame_img_id in views_frame_image_ids.items():
-            if f"C{str(int(view_id))}" == view_name:
+            if f"C{str(view_id)}" == view_name:
                 continue
             views_img_ids.append(view_first_frame_img_id + frame_offset)
 
@@ -116,9 +109,7 @@ class WildTrackDataset(CocoDetection):
         res_target_list = []
 
         for view_img_id in views_img_ids:
-            view_img_id = int(view_img_id)
-            img, target = self._getitem_from_id(
-                view_img_id, random_state, random_jitter=False)
+            img, target = self._getitem_from_id(view_img_id, random_state, random_jitter=False)
 
             if self._prev_frame:
                 frame_id = self.coco.imgs[view_img_id]['frame_id']
@@ -129,8 +120,7 @@ class WildTrackDataset(CocoDetection):
                     min(frame_id + self._prev_frame_range, self.seq_length(view_img_id) - 1))
                 prev_image_id = self.coco.imgs[view_img_id]['first_frame_image_id'] + prev_frame_id
 
-                prev_img, prev_target = self._getitem_from_id(
-                    prev_image_id, random_state)
+                prev_img, prev_target = self._getitem_from_id(prev_image_id, random_state)
                 target[f'prev_image'] = prev_img
                 target[f'prev_target'] = prev_target
 
@@ -138,23 +128,16 @@ class WildTrackDataset(CocoDetection):
                     # PREV PREV frame equidistant as prev_frame
                     prev_prev_frame_id = min(max(0, prev_frame_id + prev_frame_id - frame_id),
                                              self.seq_length(view_img_id) - 1)
-                    prev_prev_image_id = self.coco.imgs[view_img_id]['first_frame_image_id'] + \
-                        prev_prev_frame_id
+                    prev_prev_image_id = self.coco.imgs[view_img_id]['first_frame_image_id'] + prev_prev_frame_id
 
-                    prev_prev_img, prev_prev_target = self._getitem_from_id(
-                        prev_prev_image_id, random_state)
+                    prev_prev_img, prev_prev_target = self._getitem_from_id(prev_prev_image_id, random_state)
                     target[f'prev_prev_image'] = prev_prev_img
                     target[f'prev_prev_target'] = prev_prev_target
 
             res_img_list.append(img)
             res_target_list.append(target)
 
-        res = list(zip(res_img_list, res_target_list))
-        random.shuffle(res)
-        res_img_list, res_target_list = zip(*res)
-
-        return res_img_list[:6], res_target_list[:6]
-
+        return res_img_list, res_target_list
         # ############# 修改部分 ######################
 
         # if self._prev_frame:

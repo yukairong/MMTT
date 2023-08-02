@@ -193,7 +193,8 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
                     "view_id": view_id,
                     "seq": seqs_names[view_id],
                     "category_id": annotations['categories'][0]['id'],
-                    "track_id": personId
+                    "track_id": personId,
+                    "views_frame_image_ids": views_first_frame_img_id
                 }
 
                 # seq_annotations[str(view_id)].append(annotation)
@@ -243,7 +244,7 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
 
 if __name__ == '__main__':
     # parser = argparse.ArgumentParser(description="Generate COCO from WildTrack")
-    data_root = r"D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset"
+    data_root = r"E:\DL_data\MOT\Wildtrack_dataset"
     seqs_names = ["C1", "C2", "C3", "C4", "C5", "C6", "C7"]
     generate_coco_from_wildtrack(
         data_root=data_root, split_name="wildtrack_train_coco",
