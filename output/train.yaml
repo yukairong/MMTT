@@ -30,7 +30,9 @@ gnn_activation: relu
 gnn_aggregator: mean
 gnn_dropout: 0.1
 gnn_edge_classes: 1
+gnn_epochs: 1000
 gnn_hidden_feats: 512
+gnn_lr: 0.0001
 gnn_n_layers: 3
 gnn_out_feats: 256
 hidden_dim: 256
@@ -87,5 +89,5 @@ val_split: Wildtrack_train_coco
 vis_and_log_interval: 1
 weight_decay: 0.0001
 weight_decay_sim: 0.001
-wildtrack_path_train: D:\dataset\MOT\Wildtrack_dataset
+wildtrack_path_train: E:\DL_data\MOT\Wildtrack_dataset
 with_box_refine: false

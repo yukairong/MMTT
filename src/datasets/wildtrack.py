@@ -95,13 +95,14 @@ class WildTrackDataset(CocoDetection):
         img, target = self._getitem_from_id(idx, random_state, random_jitter=False)
 
         # ############# 修改部分 ######################
-        view_id = img['view_id'] + 1   # 获取当前图像的视角
-        frame_offset = img['frame_id']  # 获取当前图像所在视角的帧数量
-        views_frame_image_ids = img['views_frame_image_ids']    # 获取每个视角第一帧图像id
+        view_id = target['view_id'][0] + 1   # 获取当前图像的视角
+        views_frame_image_ids = target['views_frame_image_ids']  # 获取每个视角第一帧图像id
+
+        frame_offset = int(target['image_id'].cpu().numpy()) % 401  # 获取当前图像所在视角的帧数量
 
         views_img_ids = [idx]
         for view_name, view_first_frame_img_id in views_frame_image_ids.items():
-            if f"C{str(view_id)}" == view_name:
+            if f"C{str(int(view_id))}" == view_name:
                 continue
             views_img_ids.append(view_first_frame_img_id + frame_offset)
 
@@ -109,6 +110,7 @@ class WildTrackDataset(CocoDetection):
         res_target_list = []
 
         for view_img_id in views_img_ids:
+            view_img_id = int(view_img_id)
             img, target = self._getitem_from_id(view_img_id, random_state, random_jitter=False)
 
             if self._prev_frame:
@@ -138,6 +140,7 @@ class WildTrackDataset(CocoDetection):
             res_target_list.append(target)
 
         return res_img_list, res_target_list
+
         # ############# 修改部分 ######################
 
         # if self._prev_frame:
