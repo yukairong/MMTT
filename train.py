@@ -71,6 +71,14 @@ def train(args: Namespace) -> None:
                 break
         return out
 
+    load_track_model = False
+    if args.track_model_checkpoint:
+        load_track_model = True
+        track_model_weight = torch.load(args.track_model_checkpoint)
+        track_model.load_state_dict(track_model_weight['model'])
+        track_model.to(device)
+
+
     track_param_dicts = [
         {"params": [p for n, p in track_model.named_parameters()
                     if not match_name_keywords(n, args.lr_backbone_names + args.lr_linear_proj_names +
@@ -141,27 +149,28 @@ def train(args: Namespace) -> None:
     # ****************************** 开始训练 **************************************************************************
     print('\n........start training.....\n')
     start_time = time.time()
-    # 训练track model
-    for epoch in range(args.start_epoch, args.epochs + 1):
-        # Train
-        if args.distributed:
-            pass
-        train_one_epoch(track_model, track_criterion, postprocessors, data_loader_train, track_optimizer, device, epoch,
-                        args)
-        lr_scheduler.step()
-        checkpoint_paths = [output_dir / 'checkpoint.pth']
-        # model saving
-        if args.output_dir:
-            if args.save_model_interval and not epoch % args.save_model_interval:
-                checkpoint_paths.append(output_dir / f"checkpoint_epoch_{epoch}.pth")
-            for checkpoint_path in checkpoint_paths:
-                misc.save_on_master({
-                    "model": track_model.state_dict(),
-                    "optimizer": track_optimizer.state_dict(),
-                    "lr_scheduler": lr_scheduler.state_dict(),
-                    "epoch": epoch,
-                    "args": args,
-                }, checkpoint_path)
+    if not load_track_model:
+        # 训练track model
+        for epoch in range(args.start_epoch, args.epochs + 1):
+            # Train
+            if args.distributed:
+                pass
+            train_one_epoch(track_model, track_criterion, postprocessors, data_loader_train, track_optimizer, device, epoch,
+                            args)
+            lr_scheduler.step()
+            checkpoint_paths = [output_dir / 'checkpoint.pth']
+            # model saving
+            if args.output_dir:
+                if args.save_model_interval and not epoch % args.save_model_interval:
+                    checkpoint_paths.append(output_dir / f"checkpoint_epoch_{epoch}.pth")
+                for checkpoint_path in checkpoint_paths:
+                    misc.save_on_master({
+                        "model": track_model.state_dict(),
+                        "optimizer": track_optimizer.state_dict(),
+                        "lr_scheduler": lr_scheduler.state_dict(),
+                        "epoch": epoch,
+                        "args": args,
+                    }, checkpoint_path)
 
     # for cluster_epoch in range(args.start_epoch, args.epochs_sim + 1):
     #     if args.distributed:
