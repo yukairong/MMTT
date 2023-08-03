@@ -16,6 +16,7 @@ backbone: resnet50  # Name of the convolutional backbone to use. ('resnet50', 'r
 dilation: False # If true, we replace stride with dilation in the last convolutional block (DC5)
 num_queries: 300  # Number of object queries
 lr_drop: 40
+track_model_checkpoint: E:\py_pro\MMTT\pre_model\WildTrack\track_model_5.pth
 
 start_epoch: 1
 epochs: 50
