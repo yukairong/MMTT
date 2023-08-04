@@ -1,6 +1,6 @@
 import torch
 # from models.detr import SetCriterion
-from models.criterion import SetCriterion, InstanceLoss, ClusterLoss, GnnMSELoss
+from models.criterion import SetCriterion, InstanceLoss, ClusterLoss, GnnMSELoss, GnnCrossEntropyLoss
 from models.backbone import build_backbone
 from models.matcher import build_matcher
 from models.transformer import build_transformer
@@ -153,7 +153,7 @@ def build_model(args):
     # instance criterion
     instance_criterion = InstanceLoss(args.contrastive_queries_num * args.batch_size, args.instance_temperature, device).to(device)
     cluster_criterion = ClusterLoss(args.person_num, args.cluster_temperature, device).to(device)
-    gnn_criterion = GnnMSELoss()
+    gnn_criterion = GnnCrossEntropyLoss()
 
     # criterion list
     criterion_list = {

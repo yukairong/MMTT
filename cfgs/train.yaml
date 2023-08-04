@@ -119,5 +119,5 @@ gnn_n_layers: 3
 gnn_activation: 'relu'
 gnn_dropout: 0.1
 gnn_aggregator: 'mean'
-gnn_lr: 0.0001
-gnn_epochs: 1000
+gnn_lr: 0.00005
+gnn_epochs: 1

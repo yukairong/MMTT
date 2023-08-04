@@ -192,11 +192,15 @@ def train(args: Namespace) -> None:
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print("Training time {}".format(total_time_str))
-    # for i, (samples, targets) in enumerate(data_loader_train):
-    #     samples = samples.to(device)
-    #     targets = [misc.nested_dict_to_device(t, device) for t in targets]
-    #     test(args, samples)
-    #     break
+    # save_gnn/cluster_modle
+    if args.output_dir:
+        misc.save_on_master({
+            "model": gnn_model.state_dict(),
+            "optimizer": gnn_optimizer.state_dict(),
+            "lr_scheduler": lr_scheduler.state_dict(),
+            "epoch": gnn_epoch,
+            "args": args,
+        }, args.output_dir / f"checkpoint_epoch_{gnn_epoch}.pth")
 
 
 if __name__ == '__main__':

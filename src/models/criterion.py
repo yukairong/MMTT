@@ -538,3 +538,14 @@ class GnnMSELoss(nn.Module):
         loss = ((pred - target) ** 2).mean()
 
         return loss
+
+
+class GnnCrossEntropyLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.criterion = nn.BCELoss()
+
+    def forward(self, pred, target):
+        loss = self.criterion(pred, target.view(-1, 1))
+
+        return loss

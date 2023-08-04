@@ -40,6 +40,7 @@ class GraphSAGE(nn.Module):
         self.mlp = MLP(out_feats, n_hidden, n_classes)
         self.layer = nn.ModuleList()
         self.layer.append(SAGEConv(in_feats, n_hidden, aggregator))
+        self.act_fun = nn.Sigmoid()
 
         for i in range(1, n_layers - 1):
             self.layer.append(SAGEConv(n_hidden, n_hidden, aggregator))
@@ -56,7 +57,10 @@ class GraphSAGE(nn.Module):
                 h = self.dropout(h)
 
         out = self.mlp(g, h)
+        out = self.act_fun(out)
+
         return out
+
 
 class MLP(nn.Module):
     def __init__(self, in_feats, hid_feats, out_classes):
@@ -64,6 +68,7 @@ class MLP(nn.Module):
         self.fc1 = nn.Linear(in_feats * 2, hid_feats)
         self.fc2 = nn.Linear(hid_feats, hid_feats)
         self.fc3 = nn.Linear(hid_feats, out_classes)
+
 
     def apply_edges(self, edges):
         h_u = edges.src['h']
