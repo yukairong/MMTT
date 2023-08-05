@@ -549,3 +549,22 @@ class GnnCrossEntropyLoss(nn.Module):
         loss = self.criterion(pred, target.view(-1, 1))
 
         return loss
+
+class GNNFocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=2, reduction='mean'):
+        super(GNNFocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+        eps = 1e-7
+        loss_1 = -1 * self.alpha * torch.pow((1 - inputs), self.gamma) * torch.log(targets + eps) * targets
+        loss_0 = -1 * (1 - self.alpha) * torch.pow(inputs, self.gamma) * torch.log(1 - inputs + eps) * (1 - targets)
+
+        loss = loss_0 + loss_1
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss
+
