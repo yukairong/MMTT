@@ -559,7 +559,7 @@ class GNNFocalLoss(nn.Module):
 
     def forward(self, inputs, targets):
         eps = 1e-7
-        loss_1 = -1 * self.alpha * torch.pow((1 - inputs), self.gamma) * torch.log(targets + eps) * targets
+        loss_1 = -1 * self.alpha * torch.pow((1 - inputs), self.gamma) * torch.log(inputs + eps) * targets
         loss_0 = -1 * (1 - self.alpha) * torch.pow(inputs, self.gamma) * torch.log(1 - inputs + eps) * (1 - targets)
 
         loss = loss_0 + loss_1
