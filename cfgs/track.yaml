@@ -1,11 +1,11 @@
 ####### result save ##########
-result_path: H:\py_pro\MMTT\eval_output\WildTrack.txt  # the results have been generated before
+result_path: E:\py_pro\MMTT\eval_output\WildTrack.txt  # the results have been generated before
 # compile video with: `ffmpeg -f image2 -framerate 15 -i %06d.jpg -vcodec libx264 -y movie.mp4 -vf scale=320:-1`
 write_image: False  # [False, 'debug', 'pretty'] add boxes on image for each frame
 # Maps are only visualized if write_images is True
 generate_attention_maps: False
-output_dir: H:\py_pro\MMTT\eval_output  # save results in this directory
-save_txt_path: H:\py_pro\MMTT\eval_output\WildTrack.txt
+output_dir: E:\py_pro\MMTT\eval_output  # save results in this directory
+save_txt_path: E:\py_pro\MMTT\eval_output\WildTrack.txt
 
 ####### init ########
 seed: 666
@@ -13,9 +13,9 @@ seed: 666
 
 ####### model info ########
 # train_best_model path
-obj_detect_checkpoint_file: H:\py_pro\MMTT\pre_model\WildTrack\checkpoint_epoch_15.pth
+obj_detect_checkpoint_file: E:\py_pro\MMTT\pre_model\WildTrack\checkpoint_epoch_15.pth
 verbose: False
-
+cluster_model_path: E:\py_pro\MMTT\pre_model\WildTrack\cluster_model_1.pth
 
 ###### dataset ######
 dataset_name: WildTrack
