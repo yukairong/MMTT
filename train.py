@@ -200,7 +200,7 @@ def train(args: Namespace) -> None:
             "lr_scheduler": lr_scheduler.state_dict(),
             "epoch": gnn_epoch,
             "args": args,
-        }, args.output_dir / f"checkpoint_epoch_{gnn_epoch}.pth")
+        }, output_dir / f"checkpoint_epoch_{gnn_epoch}.pth")
 
 
 if __name__ == '__main__':
