@@ -25,9 +25,11 @@ ex.add_named_config('reid', './cfgs/track_reid.yaml')
 # 打印当前运行的参数和对应的值
 @ex.automain
 def main(write_image, output_dir, _run, seed, _config, obj_detect_checkpoint_file, _log, verbose,
-         tracker_cfg, generate_attention_maps, result_path, save_txt_path, dataset_name, obj_detector_model=None):
+         tracker_cfg, generate_attention_maps, result_path, save_txt_path, dataset_name,
+         cluster_model_path, obj_detector_model=None):
     """
 
+    :param cluster_model_path: cluster_model 的模型权重
     :param save_txt_path: 保存检测结果的路径
     :param result_path: 保存预测的文件路径
     :param generate_attention_maps:
@@ -85,6 +87,11 @@ def main(write_image, output_dir, _run, seed, _config, obj_detect_checkpoint_fil
         obj_detector = None
         obj_detector_post = None
         print('Please provide your obj_detector_model.')
+
+    gnn_model_checkpoint = torch.load(cluster_model_path, map_location=lambda storage, loc: storage)
+    obj_detector['gnn_model'].load_state_dict(gnn_model_checkpoint['model'])
+    obj_detector['gnn_model'].to('cuda:0')
+
 
     if hasattr(obj_detector, 'tracking'):
         obj_detector.tracking()
