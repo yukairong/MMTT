@@ -1,0 +1,16 @@
+# training config
+train: True
+epochs: 100
+batch_size: 16
+eval_batch_size: 64
+max_passing_steps: 4
+
+# testing config
+test: False
+ckpt: ""
+visualize: False
+
+# common config
+device: 'cuda'
+output: './gnn_ckpt'
+wildtrack: True

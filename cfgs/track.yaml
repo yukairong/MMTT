@@ -13,7 +13,7 @@ seed: 666
 
 ####### model info ########
 # train_best_model path
-obj_detect_checkpoint_file: E:\py_pro\MMTT\pre_model\WildTrack\track_model_5.pth
+obj_detect_checkpoint_file: C:\Users\KairongYu\Desktop\MMTT-project\MMTT\model_weight\checkpoint_epoch_5.pth
 verbose: False
 cluster_model_path: E:\py_pro\MMTT\pre_model\WildTrack\cluster_model_1.pth
 

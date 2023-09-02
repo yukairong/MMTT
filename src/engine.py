@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 from src.utils import misc as utils
-from .datasets import get_coco_api_from_dataset
+from src.datasets import get_coco_api_from_dataset
 
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors,

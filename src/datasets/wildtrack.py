@@ -6,7 +6,7 @@ import random
 
 import torch
 
-from src.datasets.coco import CocoDetection, make_coco_transforms
+from datasets.coco import CocoDetection, make_coco_transforms
 from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True

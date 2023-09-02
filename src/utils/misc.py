@@ -46,6 +46,10 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
     return torchvision.ops.misc.interpolate(input, size, scale_factor, mode, align_corners)
 
 
+def udf_collate_fn(batch):
+    return batch
+
+
 # *********************************************************************************************************************
 def collate_fn(batch):
     """
@@ -299,6 +303,7 @@ def save_on_master(*args, **kwargs):
     if is_main_process():
         torch.save(*args, **kwargs)
 
+
 def reduce_dict(input_dict, average=True):
     """
     Args:
@@ -325,6 +330,7 @@ def reduce_dict(input_dict, average=True):
         reduced_dict = {k: v for k, v in zip(names, values)}
 
     return reduced_dict
+
 
 class SmoothedValue(object):
     """
@@ -500,4 +506,3 @@ class MetricLogger(object):
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
         print('{} Total time: {} ({:.4f} s / it)'.format(
             header, total_time_str, total_time / len(iterable)))
-

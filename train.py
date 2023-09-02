@@ -205,6 +205,7 @@ def train(args: Namespace) -> None:
 
 if __name__ == '__main__':
     config = ex.run_commandline().config
+    print(config)
     # 将args的字典参数转换成namespace
     args = nested_dict_to_namespace(config)
     train(args)

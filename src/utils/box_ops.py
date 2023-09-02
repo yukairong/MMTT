@@ -1,6 +1,11 @@
 import torch
 from torchvision.ops.boxes import box_area
 
+
+def get_color(idx: int):
+    idx = idx * 3
+    return (37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255
+
 def box_cxcywh_to_xyxy(x):
     """
 

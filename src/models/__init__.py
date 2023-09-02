@@ -14,7 +14,6 @@ from models.graphSAGE import GraphSAGE
 
 from models.multi_view_deformable_tracking import MultiViewDeformableTrack
 
-
 def build_model(args):
     """
     构建网络模型
