@@ -247,7 +247,10 @@ class WildTrackGnnDataset(BaseGraphDataset):
 
         graph = dgl.graph((u + v, v + u), idtype=torch.int32, device=self.device)
         graph.ndata['cam'] = torch.tensor(cam_list, dtype=torch.int32).to(self.device)
-        node_feature = torch.tensor(node_feature, dtype=torch.float32).to(self.device)
+        # node_feature = torch.tensor(node_feature, dtype=torch.float32).to(self.device)
+        node_feature = torch.tensor(
+            [f.cpu().detach().numpy() for f in node_feature], dtype=torch.float32
+        ).to(self.device)
 
         y_true = torch.tensor(lbls + lbls, dtype=torch.float32, device=self.device)
         embedding = torch.vstack((
