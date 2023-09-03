@@ -196,7 +196,8 @@ class WildTrackGnnDataset(BaseGraphDataset):
         u, v, lbls = [], [], []
 
         samples, targets, views = self.coco_dataset[index]
-        samples = samples.to(self.device)
+        # samples = torch.vstack(samples).to(self.device)
+        samples = [sample.to(self.device) for sample in samples]
         targets = [utils.misc.nested_dict_to_device(t, device=self.device) for t in targets]
 
         # track model的正向推理
