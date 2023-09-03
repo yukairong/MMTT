@@ -20,7 +20,7 @@ class EdgeFeatureEncoder(nn.Module):
     def __init__(self, device, ckpt=None):
         super(EdgeFeatureEncoder, self).__init__()
         self.layer = nn.Sequential(
-            nn.Linear(4, 8),
+            nn.Linear(2, 8),
             nn.ReLU(),
             nn.Linear(8, 6),
             nn.ReLU()
