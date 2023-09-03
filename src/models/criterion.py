@@ -5,8 +5,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from utils import box_ops
-from utils.misc import (NestedTensor, accuracy, dice_loss, get_world_size,
+from src.utils import box_ops
+from src.utils.misc import (NestedTensor, accuracy, dice_loss, get_world_size,
                         interpolate, is_dist_avail_and_initialized,
                         nested_tensor_from_tensor_list, sigmoid_focal_loss)
 

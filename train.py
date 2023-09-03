@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from src.engine import train_one_epoch, train_cluster_model_one_epoch, train_gnn_model_one_epoch
 from src.datasets import build_dataset
 from src.models import build_model
-from src.models.transformer import test
+# from src.models.transformer import test
 from src.utils import misc
 from src.utils.misc import nested_dict_to_namespace
 

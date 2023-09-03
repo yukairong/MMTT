@@ -16,7 +16,7 @@ backbone: resnet50  # Name of the convolutional backbone to use. ('resnet50', 'r
 dilation: False # If true, we replace stride with dilation in the last convolutional block (DC5)
 num_queries: 300  # Number of object queries
 lr_drop: 40
-track_model_checkpoint: E:\py_pro\MMTT\pre_model\WildTrack\track_model_5.pth
+track_model_checkpoint:
 
 start_epoch: 1
 epochs: 50
@@ -49,11 +49,10 @@ track_query_false_positive_eos_weight: True
 # ###### DATASET CONFIG ######
 # The file name where WildTrack Dataset convert to COCO type to save
 train_split: wildtrack_train_coco
-val_split: Wildtrack_train_coco
+val_split: Wildtrack_val_coco
 dataset: 'wildTrack'
 
-wildtrack_path_train: 'D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset'  # train dataset root (kongcheng)
-#wildtrack_path_train: 'D:\dataset\MOT\Wildtrack_dataset'  # train dataset root (fancy)
+wildtrack_path_train: 'D:\dataset\MOT\Wildtrack_dataset'  # train dataset root (kongcheng)
 mot_path_val: 'D:\datasets\MOT\Wildtrack_dataset\wildtrack_val_coco' # valid dataset root
 track_prev_frame_rnd_augs: 0.01 # crop augment
 track_prev_frame_range: 5 #  Range of possible random previous frames

@@ -2,10 +2,9 @@ import copy
 
 import torch
 import torch.nn.functional as F
-from torch import nn, Tensor
+from torch import nn
 
-from models.transformer import TransformerDecoderLayer, TransformerDecoder
-from models.deformable_transformer import DeformableTransformerDecoderLayer
+from src.models.transformer import TransformerDecoderLayer, TransformerDecoder
 
 
 def _get_clones(module, N):

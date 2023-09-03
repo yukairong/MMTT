@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.nn.init import constant_, normal_, xavier_uniform_
 
-from utils.misc import inverse_sigmoid
+from src.utils.misc import inverse_sigmoid
 from .ops.modules import MSDeformAttn
 from .transformer import _get_clones, _get_activation_fn
 
