@@ -180,8 +180,9 @@ class BaseGraphDataset(Dataset):
 def get_value_by_node_id(frame_dict, node_id):
     for key, val in frame_dict.items():
         view_id = key
-        if val['node_id'] == node_id:
-            return view_id, val['labels'], val['features']
+        for frame_node_id in val['node_id']:
+            if frame_node_id == node_id:
+                return view_id, val['labels'], val['features']
 
 
 class WildTrackGnnDataset(BaseGraphDataset):
