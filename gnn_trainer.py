@@ -158,7 +158,7 @@ class GnnTrainer:
         scores_collector = torch.zeros(len(self.metrics_name), dtype=torch.float32)
         n = 0
         for i, data in enumerate(tqdm.tqdm(dataloader)):
-            for graph, node_feature, edge_feature, y_true, _ in data:
+            for graph, node_feature, edge_feature, y_true in data:
                 x_node = self.node_feature_encoder(node_feature)
                 x_edge = self.edge_feature_encoder(edge_feature)
                 for _ in range(max_passing_steps):
