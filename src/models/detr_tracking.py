@@ -1,23 +1,21 @@
 import math
-import random
 from contextlib import nullcontext
 
 import torch
 import torch.nn as nn
 
-from utils import box_ops
-from utils.misc import NestedTensor, get_rank
-from models.deformable_detr import DeformableDETR
-from models.detr import DETR
-from models.matcher import HungarianMatcher
+from src.models.deformable_detr import DeformableDETR
+from src.models.detr import DETR
+from src.models.matcher import HungarianMatcher
+from src.utils.misc import NestedTensor
+
 
 class DETRTrackingBase(nn.Module):
-
     def __init__(self,
                  track_query_false_positive_prob: float = 0.0,
                  track_query_false_negative_prob: float = 0.0,
                  matcher: HungarianMatcher = None,
-                 backprop_prev_frame = False,
+                 backprop_prev_frame=False,
                  **kwargs):
         self._matcher = matcher
         self._track_query_false_positive_prob = track_query_false_positive_prob
@@ -90,7 +88,7 @@ class DETRTrackingBase(nn.Module):
             target_ind_matching = target_ind_match_matrix.any(dim=1)
             target_ind_matched_idx = target_ind_match_matrix.nonzero()[:, 1]
 
-            target['track_query_match_ids'] = target_ind_matched_idx # 当前帧与上一帧匹配的track ID索引
+            target['track_query_match_ids'] = target_ind_matched_idx  # 当前帧与上一帧匹配的track ID索引
 
             # random false positive
             if add_false_pos:
@@ -116,12 +114,12 @@ class DETRTrackingBase(nn.Module):
                     # prev_boxes_unmatched: 当前batch中第i张图片中未能与上一帧目标匹配的预测框
                     prev_boxes_unmatched = prev_out["pred_boxes"][i, not_prev_out_ind]
 
-                    if len(prev_boxes_matched) > j: # 判断j是否没有超出prev_boxes_matched范围
+                    if len(prev_boxes_matched) > j:  # 判断j是否没有超出prev_boxes_matched范围
                         prev_box_matched = prev_boxes_matched[j]
                         # 匹配到的中心值 - 未匹配到的box中心值
                         box_weights = prev_box_matched.unsqueeze(dim=0)[:, :2] - prev_boxes_unmatched[:, :2]
                         box_weights = box_weights[:, 0] ** 2 + box_weights[:, 0] ** 2
-                        box_weights = torch.sqrt(box_weights)   # 计算L2损失
+                        box_weights = torch.sqrt(box_weights)  # 计算L2损失
                         # 挑出一个最类似于背景的query作为目标 (数据增强) (偏离目标中心点最远的query)
                         random_false_out_idx = not_prev_out_ind.pop(torch.multinomial(box_weights.cpu(), 1).item())
                     else:
@@ -188,7 +186,7 @@ class DETRTrackingBase(nn.Module):
                             prev_targets,
                             prev_prev_features)
                     else:
-                        prev_out, _, prev_features, _, _ = super().forward([t['prev_image'] for t in targets]) # t-1帧计算
+                        prev_out, _, prev_features, _, _ = super().forward([t['prev_image'] for t in targets])  # t-1帧计算
 
                     prev_outputs_without_aux = {
                         k: v for k, v in prev_out.items() if 'aux_outputs' not in k}
@@ -210,6 +208,7 @@ class DETRTrackingBase(nn.Module):
         out, targets, features, memory, hs = super().forward(samples, targets, prev_features)
 
         return out, targets, features, memory, hs
+
 
 class DETRTracking(DETRTrackingBase, DETR):
     def __init__(self, kwargs):

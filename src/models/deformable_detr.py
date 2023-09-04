@@ -5,17 +5,20 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from src.models.detr import DETR, PostProcess
 from src.utils import box_ops
 from src.utils.misc import NestedTensor, inverse_sigmoid, nested_tensor_from_tensor_list
-from models.detr import DETR, PostProcess
+
 
 def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
+
 
 class DeformableDETR(DETR):
     """
     This is the Deformable DETR module that performs object detection
     """
+
     def __init__(self, backbone, transformer, num_classes, num_queries, num_feature_levels,
                  aux_loss=True, with_box_refine=False, two_stage=False, overflow_boxes=False,
                  multi_frame_attention=False, multi_frame_encoding=False, merge_frame_features=False, **kwargs):
@@ -51,7 +54,7 @@ class DeformableDETR(DETR):
 
             # 遍历不同尺度的输出特征图
             for i in range(num_backbone_outs):
-                in_channels = num_channels[i]   # 特征的输入维度
+                in_channels = num_channels[i]  # 特征的输入维度
                 # hidden_dim为d_model, embedding的维度
                 input_proj_list.append(nn.Sequential(
                     nn.Conv2d(in_channels, self.hidden_dim, kernel_size=1),
@@ -80,7 +83,7 @@ class DeformableDETR(DETR):
 
         # 初始化
         prior_prob = 0.01
-        bias_value = -math.log((1-prior_prob) / prior_prob)
+        bias_value = -math.log((1 - prior_prob) / prior_prob)
         # class_embed 共享回归头 (self.hidden_dim, num_classes+1)
         self.class_embed.bias.data = torch.ones_like(self.class_embed.bias) * bias_value
         # bbox_embed: MLP(self.hidden_dim, self.hidden_dim, 4, 3) 初始化最后一层输出层
@@ -169,7 +172,8 @@ class DeformableDETR(DETR):
 
                 if self.merge_frame_features:
                     prev_src, _ = prev_features[l].decompose()
-                    src_list.append(self.merge_features[l](torch.cat([self.input_proj[l](src), self.input_proj[l](prev_src)], dim=1)))
+                    src_list.append(self.merge_features[l](
+                        torch.cat([self.input_proj[l](src), self.input_proj[l](prev_src)], dim=1)))
                 else:
                     # 将原始各个特征进行映射embedding
                     src_list.append(self.input_proj[l](src))
@@ -182,7 +186,9 @@ class DeformableDETR(DETR):
                 for l in range(_len_srcs, self.num_feature_levels):
                     if l == _len_srcs:
                         if self.merge_frame_features:
-                            src = self.merge_features[l](torch.cat([self.input_proj[l](frame_feat[-1].tensors), self.input_proj[l](prev_features[-1].tensors)], dim=1))
+                            src = self.merge_features[l](torch.cat([self.input_proj[l](frame_feat[-1].tensors),
+                                                                    self.input_proj[l](prev_features[-1].tensors)],
+                                                                   dim=1))
                         else:
                             src = self.input_proj[l](frame_feat[-1].tensors)
                     else:
@@ -211,8 +217,8 @@ class DeformableDETR(DETR):
         hs, memory, init_reference, inter_references, enc_outputs_class, enc_outputs_coord_unact = \
             self.transformer(src_list, mask_list, pos_list, query_embeds, targets)
 
-        outputs_classes = []    # 分类结果
-        outputs_coords = []     # 回归结果
+        outputs_classes = []  # 分类结果
+        outputs_coords = []  # 回归结果
         for lvl in range(hs.shape[0]):
             if lvl == 0:
                 reference = init_reference
@@ -276,6 +282,7 @@ class DeformablePostProcess(PostProcess):
     """
     This module converts the model's output into the format expected by the coco api
     """
+
     @torch.no_grad()
     def forward(self, outputs, target_sizes, results_mask=None):
         """ Perform the computation

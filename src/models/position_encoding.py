@@ -1,7 +1,10 @@
 import math
+
 import torch
 from torch import nn
-from utils.misc import NestedTensor
+
+from src.utils.misc import NestedTensor
+
 
 class PositionEmbeddingSine3D(nn.Module):
 
@@ -78,14 +81,14 @@ class PositionEmbeddingSine(nn.Module):
         self.scale = scale
 
     def forward(self, tensor_list: NestedTensor):
-        x = tensor_list.tensors # (1, 3, 40, 40)
-        mask = tensor_list.mask # (1, 40, 40)
+        x = tensor_list.tensors  # (1, 3, 40, 40)
+        mask = tensor_list.mask  # (1, 40, 40)
         assert mask is not None
-        not_mask = ~mask    # (1, 40, 40)
+        not_mask = ~mask  # (1, 40, 40)
         # 在行上进行逐次累积
-        y_embed = not_mask.cumsum(1, dtype=torch.float32)   # (1, 40, 40)
+        y_embed = not_mask.cumsum(1, dtype=torch.float32)  # (1, 40, 40)
         # 在列上进行逐次累积
-        x_embed = not_mask.cumsum(2, dtype=torch.float32)   # (1, 40, 40)
+        x_embed = not_mask.cumsum(2, dtype=torch.float32)  # (1, 40, 40)
         if self.normalize:
             eps = 1e-6
             y_embed = (y_embed - 0.5) / (y_embed[:, -1:, :] + eps) * self.scale
@@ -96,8 +99,10 @@ class PositionEmbeddingSine(nn.Module):
 
         pos_x = x_embed[:, :, :, None] / dim_t  # (1, 40, 40, 128)
         pos_y = y_embed[:, :, :, None] / dim_t  # (1, 40, 40, 128)
-        pos_x = torch.stack((pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()), dim=4).flatten(3) # (1, 40, 40, 128)
-        pos_y = torch.stack((pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()), dim=4).flatten(3) # (1, 40, 40, 128)
+        pos_x = torch.stack((pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()), dim=4).flatten(
+            3)  # (1, 40, 40, 128)
+        pos_y = torch.stack((pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()), dim=4).flatten(
+            3)  # (1, 40, 40, 128)
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)  # (1, 256, 40, 40)
         return pos
 
@@ -106,6 +111,7 @@ class PositionEmbeddingLearned(nn.Module):
     """
     绝对位置embedding, 可学习
     """
+
     def __init__(self, num_pos_feats=256):
         super().__init__()
         self.row_embed = nn.Embedding(50, num_pos_feats)
@@ -148,7 +154,7 @@ def build_position_encoding(args):
 
     # 使用sine方式进行位置编码
     if args.position_embedding == "sine":
-        position_embedding = sine_emedding_func(n_steps,  normalize=True)
+        position_embedding = sine_emedding_func(n_steps, normalize=True)
     # 使用学习的方式进行位置编码
     elif args.position_embedding == "learned":
         position_embedding = PositionEmbeddingLearned(n_steps)
@@ -161,6 +167,8 @@ if __name__ == '__main__':
     from utils.misc import nested_dict_to_namespace
 
     ex = sacred.Experiment("position_encoding_experiment")
+
+
     @ex.config
     def pos_encode_test_config():
         multi_frame_attention = False
@@ -168,6 +176,7 @@ if __name__ == '__main__':
         hidden_dim = 256
         position_embedding = "sine"
         device = "cuda:0"
+
 
     config = pos_encode_test_config()
     ex.add_config(config)
@@ -181,4 +190,3 @@ if __name__ == '__main__':
     test_input = NestedTensor(tensors, masks)
     output = position_embedding(test_input)
     print(output)
-

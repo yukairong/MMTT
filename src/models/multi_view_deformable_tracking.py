@@ -5,9 +5,8 @@ from contextlib import nullcontext
 import torch
 from torch import nn
 
-from models.deformable_detr import DeformableDETR
-from models.extractor import ContrastiveClusterExtractor
-from models.graphSAGE import GraphSAGE
+from src.models.deformable_detr import DeformableDETR
+from src.models.graphSAGE import GraphSAGE
 from src.utils.misc import NestedTensor
 
 
@@ -34,7 +33,7 @@ class MultiViewDeformableTrack(nn.Module):
         self.frame_new_obj_hs = []  # 存储t帧下各个视角认为可能的新对象
         self.frame_new_obj_hs_augment = []  # 存储t帧下其他decoder可能新对象的特征
 
-        self.frame_obj = {} # 存储t帧下每个视角的对象特征以及真实track id
+        self.frame_obj = {}  # 存储t帧下每个视角的对象特征以及真实track id
 
     def train(self, mode: bool = True):
         self._tracking = False
@@ -115,7 +114,7 @@ class MultiViewDeformableTrack(nn.Module):
 
                         # 将目标放入frame_obj中
                         for out_ind, target_ind in zip(prev_out_ind, prev_target_ind):
-                            obj_feat = prev_hs[-1, i, out_ind, :]   # 目标的特征
+                            obj_feat = prev_hs[-1, i, out_ind, :]  # 目标的特征
                             obj_label = target['prev_target']['track_ids'][target_ind]  # 目标的track id
 
                             if i not in self.frame_obj:
@@ -125,7 +124,6 @@ class MultiViewDeformableTrack(nn.Module):
                                 }
                             self.frame_obj[i]['features'].append(obj_feat)
                             self.frame_obj[i]['labels'].append(obj_label)
-
 
                         src_prev_out_ind = copy.deepcopy(prev_out_ind)
                         # random subset

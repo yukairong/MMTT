@@ -1,18 +1,18 @@
 import torch
+
+from src.models.backbone import build_backbone
 # from models.detr import SetCriterion
-from models.criterion import SetCriterion, InstanceLoss, ClusterLoss, GnnMSELoss, GnnCrossEntropyLoss
-from models.backbone import build_backbone
-from models.matcher import build_matcher
-from models.transformer import build_transformer
-from models.deformable_transformer import build_deformable_transformer
+from src.models.criterion import SetCriterion, InstanceLoss, ClusterLoss, GnnMSELoss, GnnCrossEntropyLoss
+from src.models.deformable_detr import DeformableDETR, DeformablePostProcess
+from src.models.deformable_transformer import build_deformable_transformer
+from src.models.detr import DETR, PostProcess
+from src.models.detr_tracking import DeformableDETRTracking, DETRTracking
+from src.models.extractor import ContrastiveClusterExtractor
+from src.models.graphSAGE import GraphSAGE
+from src.models.matcher import build_matcher
+from src.models.multi_view_deformable_tracking import MultiViewDeformableTrack
+from src.models.transformer import build_transformer
 
-from models.detr import DETR, PostProcess
-from models.detr_tracking import DeformableDETRTracking, DETRTracking
-from models.deformable_detr import DeformableDETR, DeformablePostProcess
-from models.extractor import ContrastiveClusterExtractor
-from models.graphSAGE import GraphSAGE
-
-from models.multi_view_deformable_tracking import MultiViewDeformableTrack
 
 def build_model(args):
     """
@@ -150,7 +150,8 @@ def build_model(args):
         postprocessors = {'bbox': PostProcess()}
 
     # instance criterion
-    instance_criterion = InstanceLoss(args.contrastive_queries_num * args.batch_size, args.instance_temperature, device).to(device)
+    instance_criterion = InstanceLoss(args.contrastive_queries_num * args.batch_size, args.instance_temperature,
+                                      device).to(device)
     cluster_criterion = ClusterLoss(args.person_num, args.cluster_temperature, device).to(device)
     gnn_criterion = GnnCrossEntropyLoss()
 
