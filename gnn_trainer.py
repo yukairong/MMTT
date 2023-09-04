@@ -129,7 +129,7 @@ class GnnTrainer:
                     x_node, x_edge = self.mpn(graph, x_node, x_edge)
                     y_pred = self.predictor(x_edge)
 
-                    step_loss = sigmoid_focal_loss(y_pred, y_true, 0.9, 5, "mean")
+                    step_loss = sigmoid_focal_loss(y_pred, y_true.reshape(-1, 1), 0.9, 5, "mean")
                     step_losses.append(step_loss)
                 graph_loss = sum(step_losses)
                 graph_losses.append(graph_loss)
