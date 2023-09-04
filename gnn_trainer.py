@@ -129,21 +129,23 @@ class GnnTrainer:
                     x_node, x_edge = self.mpn(graph, x_node, x_edge)
                     y_pred = self.predictor(x_edge)
 
-                    step_loss = sigmoid_focal_loss(y_pred, y_true, 0.9, 5, "mean")
+                    step_loss = sigmoid_focal_loss(y_pred, y_true.reshape(-1, 1), 0.9, 5, "mean")
                     step_losses.append(step_loss)
-                loss = sum(step_losses)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                loss_val = loss.item()
-                losses.append(loss_val)
-                logger.info(f"epoch=({epoch}/{self.gnn_args.epochs - 1})"
-                            f" | [{i + 1}/{len(dataloader)}]"
-                            f" | loss={loss_val:.4f}"
-                            f" | avg_graph_loss={loss_val / self.gnn_args.batch_size:.4f}")
-            avg_loss = sum(losses) / len(losses)
-            writer.add_scalar("Loss/train", avg_loss, epoch)
-            logger.info(f"finished epoch {epoch}. avg_train_loss={avg_loss:.4f}")
+                graph_loss = sum(step_losses)
+                graph_losses.append(graph_loss)
+            loss = sum(step_losses)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            loss_val = loss.item()
+            losses.append(loss_val)
+            logger.info(f"epoch=({epoch}/{self.gnn_args.epochs - 1})"
+                        f" | [{i + 1}/{len(dataloader)}]"
+                        f" | loss={loss_val:.4f}"
+                        f" | avg_graph_loss={loss_val / self.gnn_args.batch_size:.4f}")
+        avg_loss = sum(losses) / len(losses)
+        writer.add_scalar("Loss/train", avg_loss, epoch)
+        logger.info(f"finished epoch {epoch}. avg_train_loss={avg_loss:.4f}")
 
     def _eval_one_epoch(self, epoch: int, dataloader, writer):
         avg_scores = self._test_one_epoch(dataloader, self.gnn_args.max_passing_steps)
@@ -158,7 +160,7 @@ class GnnTrainer:
         scores_collector = torch.zeros(len(self.metrics_name), dtype=torch.float32)
         n = 0
         for i, data in enumerate(tqdm.tqdm(dataloader)):
-            for graph, node_feature, edge_feature, y_true, _ in data:
+            for graph, node_feature, edge_feature, y_true in data:
                 x_node = self.node_feature_encoder(node_feature)
                 x_edge = self.edge_feature_encoder(edge_feature)
                 for _ in range(max_passing_steps):
