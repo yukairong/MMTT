@@ -52,8 +52,8 @@ train_split: wildtrack_train_coco
 val_split: Wildtrack_val_coco
 dataset: 'wildTrack'
 
-wildtrack_path_train: 'D:\dataset\MOT\Wildtrack_dataset'  # train dataset root (kongcheng)
-mot_path_val: 'D:\datasets\MOT\Wildtrack_dataset\wildtrack_val_coco' # valid dataset root
+wildtrack_path_train: 'D:\dataset\MOT\Wildtrack_dataset_train'  # train dataset root (kongcheng)
+mot_path_val: 'D:\dataset\MOT\Wildtrack_dataset_val' # valid dataset root
 track_prev_frame_rnd_augs: 0.01 # crop augment
 track_prev_frame_range: 5 #  Range of possible random previous frames
 
