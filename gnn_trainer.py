@@ -167,7 +167,7 @@ class GnnTrainer:
                     x_node, x_edge = self.mpn(graph, x_node, x_edge)
 
                 y_pred = self.predictor(x_edge)
-                cluster = ClusterDetections(y_pred, y_true, graph)
+                cluster = ClusterDetections(y_pred, y_true.reshape(-1, 1), graph)
                 cluster.pruning_and_splitting()
 
                 scores = cluster.scores()
