@@ -9,7 +9,7 @@ from utils.dataset_utils import parse_json_file, xyxy_convert_to_xywh
 
 # 存储数据集中的seqs信息
 DATSET_SEQS_INFO = {
-    "WildTrack" : {"img_width": 1920, "img_height": 1080, "seq_length": 401}
+    "WildTrack" : {"img_width": 1920, "img_height": 1080, "seq_length": 400}
 }
 
 def generate_coco_from_wildtrack(data_root=None, split_name=None,
@@ -82,8 +82,11 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
         # 便利该视角下的所有图片
         seq_list_dir = os.listdir(os.path.join(imgs_data_root, seq))
 
-        start_frame = int(frame_range["start"] * seq_length)
-        end_frame = int(frame_range["end"] * seq_length)
+        start_frame = int(frame_range["start"] * len(seq_list_dir))
+        end_frame = int(frame_range["end"] * len(seq_list_dir))
+
+        # start_frame = int(frame_range["start"] * seq_length)
+        # end_frame = int(frame_range["end"] * seq_length)
 
         # 取出起始帧到结束帧区间内的所有图片
         seq_list_dir = seq_list_dir[start_frame: end_frame]
@@ -244,17 +247,22 @@ def generate_coco_from_wildtrack(data_root=None, split_name=None,
 
 if __name__ == '__main__':
     # parser = argparse.ArgumentParser(description="Generate COCO from WildTrack")
-    data_root = r"D:\dataset\MOT\Wildtrack_dataset"
     seqs_names = ["C1", "C2", "C3", "C4", "C5", "C6", "C7"]
 
-    frame_range_train = {'start': 0.0, 'end': 0.8}
+    train_data_root = r"D:\dataset\MOT\Wildtrack_dataset_train"
+    frame_range_train = {'start': 0.0, 'end': 1.0}
     generate_coco_from_wildtrack(
-        data_root=data_root, split_name="wildtrack_train_coco",
+        data_root=train_data_root, split_name="wildtrack_train_coco",
         seqs_names=seqs_names, frame_range=frame_range_train
     )
 
-    frame_range_val = {'start': 0.8, 'end': 1.0}
+    val_data_root = r"D:\dataset\MOT\Wildtrack_dataset_val"
+    frame_range_val = {'start': 0.0, 'end': 1.0}
     generate_coco_from_wildtrack(
-        data_root=data_root, split_name="wildtrack_val_coco",
+        data_root=val_data_root, split_name="wildtrack_val_coco",
         seqs_names=seqs_names, frame_range=frame_range_val
     )
+
+    # generate_coco_from_wildtrack(
+    #     data_root=data_root, split_name="wildtrack_train_coco",
+    #     seqs_names=seqs_names, frame_range=None)
