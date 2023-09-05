@@ -1,6 +1,6 @@
 import sacred
 
-from utils.misc import nested_dict_to_namespace
+from src.utils.misc import nested_dict_to_namespace
 from gnn_trainer import GnnTrainer
 
 ex = sacred.Experiment('gnn_train')
