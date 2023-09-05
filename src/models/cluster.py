@@ -6,11 +6,20 @@ from torchvision.utils import draw_bounding_boxes, save_image
 
 from utils.box_ops import get_color
 
+
 class ClusterDetections:
 
     def __init__(self, inputs,  targets, graph):
-        self.inputs = inputs.squeeze(1).cpu()
-        self.targets = targets.squeeze(1).int().cpu()
+        self.sof_flag = True if inputs.shape[-1] > 1 else False
+        if not self.sof_flag:
+            sig = torch.nn.Sigmoid()
+            self.inputs = sig(inputs)
+            self.inputs = inputs.squeeze(1).cpu()
+            self.targets = targets.squeeze(1).int().cpu()
+        else:
+            sof = torch.nn.Softmax(dim=1)
+            self.inputs = sof(inputs)
+            self.targets = targets.squeeze(1).int().cpu()
         self.graph = graph
 
         self._cam_info = graph.ndata['cam'].cpu()
@@ -23,7 +32,13 @@ class ClusterDetections:
 
     def _filter_edges(self):
         weight_active_edges = []
-        edges_id = np.where(self.inputs >= 0.5)[0]
+        if self.sof_flag:
+            preds = torch.argmax(self.inputs, dim=1)
+            preds = preds.cpu()
+            edges_id = np.where(preds == 1)[0]
+        else:
+            edges_id = np.where(self.inputs >= 0.5)[0]
+
         for edge_id, u, v in zip(edges_id, *self.graph.find_edges(edges_id)):
             weight_active_edges.append(
                 (int(u), int(v), float(self.inputs[edge_id]))
@@ -33,8 +48,9 @@ class ClusterDetections:
 
     def scores(self):
         return (
-            metrics.adjusted_rand_score(self.targets, self._act_edges), # ARI
-            metrics.adjusted_mutual_info_score(self.targets, self._act_edges),  # AMI
+            metrics.adjusted_rand_score(self.targets, self._act_edges),  # ARI
+            metrics.adjusted_mutual_info_score(
+                self.targets, self._act_edges),  # AMI
             metrics.accuracy_score(self.targets, self._act_edges),  # ACC
             metrics.homogeneity_score(self.targets, self._act_edges),   # H
             metrics.completeness_score(self.targets, self._act_edges),  # C
