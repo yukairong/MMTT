@@ -249,14 +249,14 @@ if __name__ == '__main__':
     # parser = argparse.ArgumentParser(description="Generate COCO from WildTrack")
     seqs_names = ["C1", "C2", "C3", "C4", "C5", "C6", "C7"]
 
-    train_data_root = r"D:\dataset\MOT\Wildtrack_dataset_train"
+    train_data_root = r"/data2/YuLe/02-fancy/Wildtrack_dataset_train/"
     frame_range_train = {'start': 0.0, 'end': 1.0}
     generate_coco_from_wildtrack(
         data_root=train_data_root, split_name="wildtrack_train_coco",
         seqs_names=seqs_names, frame_range=frame_range_train
     )
 
-    val_data_root = r"D:\dataset\MOT\Wildtrack_dataset_val"
+    val_data_root = "/data2/YuLe/02-fancy/Wildtrack_dataset_val/"
     frame_range_val = {'start': 0.0, 'end': 1.0}
     generate_coco_from_wildtrack(
         data_root=val_data_root, split_name="wildtrack_val_coco",
