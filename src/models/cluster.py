@@ -1,10 +1,7 @@
-import torch
-import numpy as np
 import networkx as nx
+import numpy as np
+import torch
 from sklearn import metrics
-from torchvision.utils import draw_bounding_boxes, save_image
-
-from utils.box_ops import get_color
 
 
 class ClusterDetections:
