@@ -13,9 +13,9 @@ seed: 666
 
 ####### model info ########
 # train_best_model path
-obj_detect_checkpoint_file: C:\Users\KairongYu\Desktop\MMTT-project\MMTT\model_weights\checkpoint_epoch_5.pth
+obj_detect_checkpoint_file: /data2/YuLe/02-fancy/checkpoint_epoch_5.pth
 verbose: False
-cluster_model_path: E:\py_pro\MMTT\pre_model\WildTrack\cluster_model_1.pth
+cluster_model_path:
 
 ###### dataset ######
 dataset_name: WildTrack
