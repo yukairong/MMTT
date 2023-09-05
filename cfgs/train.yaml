@@ -49,10 +49,10 @@ track_query_false_positive_eos_weight: True
 # ###### DATASET CONFIG ######
 # The file name where WildTrack Dataset convert to COCO type to save
 train_split: wildtrack_train_coco
-val_split: Wildtrack_val_coco
+val_split: wildtrack_val_coco
 dataset: 'wildTrack'
 
-wildtrack_path_train: 'D:\datasets\Wildtrack_dataset_full\Wildtrack_dataset'  # train dataset root (kongcheng)
+wildtrack_path_train: "/data2/YuLe/02-fancy/Wildtrack_dataset_train/"  # train dataset root (kongcheng)
 mot_path_val: 'D:\dataset\MOT\Wildtrack_dataset_val' # valid dataset root
 track_prev_frame_rnd_augs: 0.01 # crop augment
 track_prev_frame_range: 5 #  Range of possible random previous frames
