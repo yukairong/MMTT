@@ -36,13 +36,18 @@ class ClusterDetections:
             preds = torch.argmax(self.inputs, dim=1)
             preds = preds.cpu()
             edges_id = np.where(preds == 1)[0]
+
+            for edge_id, u, v in zip(edges_id, *self.graph.find_edges(edges_id)):
+                weight_active_edges.append(
+                    (int(u), int(v), float(self.inputs[edge_id, 1]))
+                )
         else:
             edges_id = np.where(self.inputs >= 0.5)[0]
 
-        for edge_id, u, v in zip(edges_id, *self.graph.find_edges(edges_id)):
-            weight_active_edges.append(
-                (int(u), int(v), float(self.inputs[edge_id]))
-            )
+            for edge_id, u, v in zip(edges_id, *self.graph.find_edges(edges_id)):
+                weight_active_edges.append(
+                    (int(u), int(v), float(self.inputs[edge_id]))
+                )
         self._act_edges[edges_id] = 1
         return weight_active_edges
 
