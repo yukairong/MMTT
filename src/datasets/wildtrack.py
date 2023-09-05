@@ -104,7 +104,7 @@ class WildTrackDataset(CocoDetection):
         views_frame_image_ids = target['views_frame_image_ids']
 
         # 获取当前图像所在视角的帧数量
-        frame_offset = int(target['image_id'].cpu().numpy()) % 400
+        frame_offset = int(target['image_id'].cpu().numpy()) % len(self.coco.dataset)
 
         views_img_ids = [idx]
         for view_name, view_first_frame_img_id in views_frame_image_ids.items():
@@ -153,7 +153,7 @@ class WildTrackDataset(CocoDetection):
         random.shuffle(res)
         res_img_list, res_target_list = zip(*res)
 
-        return res_img_list[:6], res_target_list[:6]
+        return res_img_list[:1], res_target_list[:1]
 
         # ############# 修改部分 ######################
 
