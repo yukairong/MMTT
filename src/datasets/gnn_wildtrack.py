@@ -110,7 +110,7 @@ class WildTrackDatset(CocoDetection):
         view_id = target['view_id'][0] + 1
         views_frame_image_ids = target['views_frame_image_ids']
 
-        frame_offset = int(target['image_id'].cpu().numpy()) % 400
+        frame_offset = int(target['image_id'].cpu().numpy()) % len(self.coco.dataset)
 
         res_img_list = []
         res_target_list = []
