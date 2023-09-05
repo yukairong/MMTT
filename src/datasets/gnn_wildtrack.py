@@ -3,12 +3,12 @@ import os
 import random
 from pathlib import Path
 import random
+import numpy as np
 
 import dgl
 import torch
 from torchvision import transforms as T
 from torch.utils.data import Dataset
-import numpy as np
 from models.multi_view_deformable_tracking import MultiViewDeformableTrack
 
 import utils.misc
@@ -16,6 +16,7 @@ from datasets.coco import CocoDetection, make_coco_transforms
 from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 
 def build_gnn_wildtrack(image_set, feature_extractor, args):
     """
@@ -71,6 +72,7 @@ def build_gnn_wildtrack(image_set, feature_extractor, args):
     )
 
     return dataset
+
 
 class WildTrackDatset(CocoDetection):
     def __init__(self, *args, prev_frame_range=1, **kwargs):
@@ -156,7 +158,8 @@ class WildTrackDatset(CocoDetection):
             res_target_list.append(target)
             res_view_list.append(view_img_id // 400)
 
-        return res_img_list, res_target_list, res_view_list
+        return res_img_list[:6], res_target_list[:6], res_view_list[:6]
+
 
 class BaseGraphDataset(Dataset):
     """Base class for Graph Dataset"""
@@ -169,9 +172,11 @@ class BaseGraphDataset(Dataset):
         self.feature_extractor = feature_extractor
 
         # ==== These values can be loaded via self.load_dataset() ====
-        self._H = []    # homography matrices, H[seq_id][cam_id] => torch.Tensor(3*3)
+        # homography matrices, H[seq_id][cam_id] => torch.Tensor(3*3)
+        self._H = []
         self._P = []    # images name pattern, F[seq_id][cam_id] => image path pattern
-        self._S = []    # frames in sequences, S[seq_id] => frame based dict (key type: str)
+        # frames in sequences, S[seq_id] => frame based dict (key type: str)
+        self._S = []
         self._SFI = None    # a (N*2) size tensor, store < seq_id, frame_id>
 
     def __len__(self):
@@ -181,14 +186,15 @@ class BaseGraphDataset(Dataset):
 def get_value_by_node_id(frame_dict, node_id):
     for key, val in frame_dict.items():
         view_id = key
-        for frame_node_id in val['node_id']:
+        for i, frame_node_id in enumerate(val['node_id']):
             if frame_node_id == node_id:
-                return view_id, val['labels'], val['features']
+                return view_id, val['labels'][i], val['features'][i]
 
 
 class WildTrackGnnDataset(BaseGraphDataset):
     def __init__(self, coco_dataset, feature_extractor, device, mode):
-        super(WildTrackGnnDataset, self).__init__(feature_extractor=feature_extractor, mode=mode)
+        super(WildTrackGnnDataset, self).__init__(
+            feature_extractor=feature_extractor, mode=mode)
 
         self.coco_dataset = coco_dataset
         self.feature_extractor = feature_extractor
@@ -200,10 +206,12 @@ class WildTrackGnnDataset(BaseGraphDataset):
         samples, targets, views = self.coco_dataset[index]
         # samples = torch.vstack(samples).to(self.device)
         samples = [sample.to(self.device) for sample in samples]
-        targets = [utils.misc.nested_dict_to_device(t, device=self.device) for t in targets]
+        targets = [utils.misc.nested_dict_to_device(
+            t, device=self.device) for t in targets]
 
         # track model的正向推理
-        out, _, features, memory, hs = self.feature_extractor.inference(samples)
+        out, _, features, memory, hs = self.feature_extractor.inference(
+            samples)
         outputs_without_aux = {
             k: v for k, v in out.items() if 'aux_outputs' not in k
         }
@@ -236,7 +244,6 @@ class WildTrackGnnDataset(BaseGraphDataset):
                 node_feature.append(obj_feat)
 
                 node_num += 1
-
         for n1 in range(node_num):
             src_cid, src_tid, _ = get_value_by_node_id(frame_obj, n1)
             for n2 in range(n1 + 1, node_num):
@@ -245,18 +252,21 @@ class WildTrackGnnDataset(BaseGraphDataset):
                     u.append(n1)
                     v.append(n2)
                     lbls.append(1 if dst_tid == src_tid else 0)
-
-        graph = dgl.graph((u + v, v + u), idtype=torch.int32, device=self.device)
-        graph.ndata['cam'] = torch.tensor(cam_list, dtype=torch.int32).to(self.device)
-        # node_feature = torch.tensor(node_feature, dtype=torch.float32).to(self.device)
+        graph = dgl.graph((u + v, v + u), idtype=torch.int32,
+                          device=self.device)
+        graph.ndata['cam'] = torch.tensor(
+            cam_list, dtype=torch.int32).to(self.device)
         # node_feature = torch.tensor(
         #     [f.cpu().detach().numpy() for f in node_feature], dtype=torch.float32
         # ).to(self.device)
         node_feature = torch.tensor(
             np.array([f.cpu().detach().numpy() for f in node_feature]), dtype=torch.float32
         ).to(self.device)
+        # node_feature = torch.tensor(
+        #     node_feature, dtype=torch.float32).to(self.device)
 
-        y_true = torch.tensor(lbls + lbls, dtype=torch.float32, device=self.device)
+        y_true = torch.tensor(
+            lbls + lbls, dtype=torch.float32, device=self.device)
         embedding = torch.vstack((
             torch.pairwise_distance(node_feature[u], node_feature[v]),
             torch.cosine_similarity(node_feature[u], node_feature[v])
@@ -267,4 +277,3 @@ class WildTrackGnnDataset(BaseGraphDataset):
 
     def __len__(self):
         return len(self.coco_dataset)
-

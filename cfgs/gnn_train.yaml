@@ -1,9 +1,14 @@
 # training config
 train: True
-epochs: 100
+epochs: 10
 batch_size: 16
 eval_batch_size: 64
 max_passing_steps: 4
+loss_name: 'CE_weighted' # CE_weighted Focal BCE_weighted BCE
+add_FPR: True
+loss_weight: 'None'
+loss_weight_custom: True
+FPR_alpha: 1
 
 # testing config
 test: False

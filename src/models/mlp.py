@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class NodeFeatureEncoder(nn.Module):
     def __init__(self, device, ckpt=None):
         super(NodeFeatureEncoder, self).__init__()
@@ -15,6 +16,7 @@ class NodeFeatureEncoder(nn.Module):
 
     def forward(self, x):
         return self.layer(x)
+
 
 class EdgeFeatureEncoder(nn.Module):
     def __init__(self, device, ckpt=None):
@@ -32,14 +34,15 @@ class EdgeFeatureEncoder(nn.Module):
     def forward(self, x):
         return self.layer(x)
 
+
 class EdgePredictor(nn.Module):
     def __init__(self, device, ckpt=None):
         super(EdgePredictor, self).__init__()
         self.pred = nn.Sequential(
             nn.Linear(6, 4),
             nn.ReLU(),
-            nn.Linear(4, 1),
-            nn.Sigmoid()
+            nn.Linear(4, 2),
+            # nn.Sigmoid()
         )
         self.to(device)
         if ckpt is not None:

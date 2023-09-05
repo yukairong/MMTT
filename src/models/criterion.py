@@ -5,10 +5,11 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from src.utils import box_ops
-from src.utils.misc import (NestedTensor, accuracy, dice_loss, get_world_size,
+from utils import box_ops
+from utils.misc import (NestedTensor, accuracy, dice_loss, get_world_size,
                         interpolate, is_dist_avail_and_initialized,
                         nested_tensor_from_tensor_list, sigmoid_focal_loss)
+from typing import Optional
 
 
 class SetCriterion(nn.Module):
@@ -53,7 +54,8 @@ class SetCriterion(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.matcher = matcher
-        self.weight_dict = weight_dict  # dict: 18  3x6  6个decoder的损失权重   6 * (loss_ce + loss_giou + loss_bbox)
+        # dict: 18  3x6  6个decoder的损失权重   6 * (loss_ce + loss_giou + loss_bbox)
+        self.weight_dict = weight_dict
         self.eos_coef = eos_coef  # 0.1
         self.losses = losses  # list: 3  ['labels', 'boxes', 'cardinality']
         empty_weight = torch.ones(self.num_classes + 1)
@@ -144,7 +146,8 @@ class SetCriterion(nn.Module):
         mask = self.mask_correlated_clusters(self.track_ids_length)
         criterion = nn.CrossEntropyLoss(reduction="sum")
 
-        sim = similarity_f(c.unsqueeze(1), c.unsqueeze(0)) / self.cluster_temprature
+        sim = similarity_f(c.unsqueeze(1), c.unsqueeze(0)) / \
+            self.cluster_temprature
         sim_i_j = torch.diag(sim, self.track_ids_length)
         sim_j_i = torch.diag(sim, - self.track_ids_length)
 
@@ -174,7 +177,8 @@ class SetCriterion(nn.Module):
         # idx tuple:2  0=[num_all_gt] 记录每个gt属于哪张图片
         # 1=[num_all_gt] 记录每个匹配到的预测框的index
         idx = self._get_src_permutation_idx(indices)
-        target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
+        target_classes_o = torch.cat([t["labels"][J]
+                                     for t, (_, J) in zip(targets, indices)])
         target_classes = torch.full(src_logits.shape[:2], self.num_classes,
                                     dtype=torch.int64, device=src_logits.device)
         # 正样本+负样本  上面匹配到的预测框作为正样本 正常的idx  而100个中没有匹配到的预测框作为负样本(idx=91 背景类)
@@ -190,7 +194,8 @@ class SetCriterion(nn.Module):
             for i, target in enumerate(targets):
                 if 'track_query_boxes' in target:
                     # remove no-object weighting for false track_queries
-                    loss_ce[i, target['track_queries_fal_pos_mask']] *= 1 / self.eos_coef
+                    loss_ce[i, target['track_queries_fal_pos_mask']
+                            ] *= 1 / self.eos_coef
                     # assign false track_queries to some object class for the final weighting
                     target_classes = target_classes.clone()
                     target_classes[i, target['track_queries_fal_pos_mask']] = 0
@@ -201,7 +206,8 @@ class SetCriterion(nn.Module):
 
         if log:
             # TODO this should probably be a separate loss, not hacked in this one here
-            losses['class_error'] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
+            losses['class_error'] = 100 - \
+                accuracy(src_logits[idx], target_classes_o)[0]
         return losses
 
     def loss_labels_focal(self, outputs, targets, indices, num_boxes, log=True):
@@ -213,7 +219,8 @@ class SetCriterion(nn.Module):
         src_logits = outputs['pred_logits']
 
         idx = self._get_src_permutation_idx(indices)
-        target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
+        target_classes_o = torch.cat([t["labels"][J]
+                                     for t, (_, J) in zip(targets, indices)])
         target_classes = torch.full(src_logits.shape[:2], self.num_classes,
                                     dtype=torch.int64, device=src_logits.device)
         target_classes[idx] = target_classes_o
@@ -233,7 +240,8 @@ class SetCriterion(nn.Module):
 
         if log:
             # TODO this should probably be a separate loss, not hacked in this one here
-            losses['class_error'] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
+            losses['class_error'] = 100 - \
+                accuracy(src_logits[idx], target_classes_o)[0]
 
         return losses
 
@@ -245,9 +253,11 @@ class SetCriterion(nn.Module):
         """
         pred_logits = outputs['pred_logits']  # [300, 2, 1]
         device = pred_logits.device
-        tgt_lengths = torch.as_tensor([len(v["labels"]) for v in targets], device=device)
+        tgt_lengths = torch.as_tensor(
+            [len(v["labels"]) for v in targets], device=device)
         # Count the number of predictions that are NOT "no-object" (which is the last class)
-        card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
+        card_pred = (pred_logits.argmax(-1) !=
+                     pred_logits.shape[-1] - 1).sum(1)
         card_err = F.l1_loss(card_pred.float(), tgt_lengths.float())
         losses = {'cardinality_error': card_err}
         return losses
@@ -269,7 +279,8 @@ class SetCriterion(nn.Module):
         # [all_gt_num, 4]  这个batch的所有正样本的预测框坐标
         src_boxes = outputs['pred_boxes'][idx]
         # [all_gt_num, 4]  这个batch的所有gt框坐标
-        target_boxes = torch.cat([t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
+        target_boxes = torch.cat([t['boxes'][i]
+                                 for t, (_, i) in zip(targets, indices)], dim=0)
 
         loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
 
@@ -301,7 +312,8 @@ class SetCriterion(nn.Module):
         src_masks = outputs["pred_masks"]
 
         # TODO use valid to mask invalid areas due to padding in loss
-        target_masks, _ = nested_tensor_from_tensor_list([t["masks"] for t in targets]).decompose()
+        target_masks, _ = nested_tensor_from_tensor_list(
+            [t["masks"] for t in targets]).decompose()
         target_masks = target_masks.to(src_masks)
 
         src_masks = src_masks[src_idx]
@@ -320,13 +332,15 @@ class SetCriterion(nn.Module):
 
     def _get_src_permutation_idx(self, indices):
         # permute predictions following indices
-        batch_idx = torch.cat([torch.full_like(src, i) for i, (src, _) in enumerate(indices)])
+        batch_idx = torch.cat([torch.full_like(src, i)
+                              for i, (src, _) in enumerate(indices)])
         src_idx = torch.cat([src for (src, _) in indices])
         return batch_idx, src_idx
 
     def _get_tgt_permutation_idx(self, indices):
         # permute targets following indices
-        batch_idx = torch.cat([torch.full_like(tgt, i) for i, (_, tgt) in enumerate(indices)])
+        batch_idx = torch.cat([torch.full_like(tgt, i)
+                              for i, (_, tgt) in enumerate(indices)])
         tgt_idx = torch.cat([tgt for (_, tgt) in indices])
         return batch_idx, tgt_idx
 
@@ -370,7 +384,8 @@ class SetCriterion(nn.Module):
         """
 
         # dict: 2   最后一个decoder层输出 : pred_logits[bs, 100, 7个class] + pred_boxes[bs, 100, 4]
-        outputs_without_aux = {k: v for k, v in outputs.items() if k != 'aux_outputs'}
+        outputs_without_aux = {k: v for k,
+                               v in outputs.items() if k != 'aux_outputs'}
 
         # 匈牙利算法  解决二分图匹配问题  从100个预测框中找到和N个gt框一一对应的预测框  其他的100-N个都变为背景
         # Retrieve the matching between the outputs of the last layer and the targets  list:1
@@ -379,7 +394,8 @@ class SetCriterion(nn.Module):
         indices = self.matcher(outputs_without_aux, targets)
 
         # Compute the average number of target boxes accross all nodes, for normalization purposes
-        num_boxes = sum(len(t["labels"]) for t in targets)  # int 统计这整个batch的所有图片的gt总个数  3
+        num_boxes = sum(len(t["labels"])
+                        for t in targets)  # int 统计这整个batch的所有图片的gt总个数  3
         num_boxes = torch.as_tensor(
             [num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
         if is_dist_avail_and_initialized():  # False
@@ -391,7 +407,8 @@ class SetCriterion(nn.Module):
         losses = {}
         # self.losses：list3:[labels, boxes, cardinality]
         for loss in self.losses:
-            losses.update(self.get_loss(loss, outputs, targets, indices, num_boxes))
+            losses.update(self.get_loss(
+                loss, outputs, targets, indices, num_boxes))
 
         # In case of auxiliary losses, we repeat this process with the
         # output of each intermediate layer.
@@ -408,7 +425,8 @@ class SetCriterion(nn.Module):
                     if loss == 'labels':
                         # Logging is enabled only for the last layer
                         kwargs = {'log': False}
-                    l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes, **kwargs)
+                    l_dict = self.get_loss(
+                        loss, aux_outputs, targets, indices, num_boxes, **kwargs)
                     l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
                     losses.update(l_dict)
 
@@ -427,7 +445,8 @@ class SetCriterion(nn.Module):
                 if loss == 'labels':
                     # Logging is enabled only for the last layer
                     kwargs['log'] = False
-                l_dict = self.get_loss(loss, enc_outputs, bin_targets, indices, num_boxes, **kwargs)
+                l_dict = self.get_loss(
+                    loss, enc_outputs, bin_targets, indices, num_boxes, **kwargs)
                 l_dict = {k + f'_enc': v for k, v in l_dict.items()}
                 losses.update(l_dict)
 
@@ -515,7 +534,8 @@ class ClusterLoss(nn.Module):
         N = 2 * self.class_num
         c = torch.cat((c_i, c_j), dim=0)
 
-        sim = self.similarity_f(c.unsqueeze(1), c.unsqueeze(0)) / self.temperature
+        sim = self.similarity_f(c.unsqueeze(
+            1), c.unsqueeze(0)) / self.temperature
         sim_i_j = torch.diag(sim, self.class_num)
         sim_j_i = torch.diag(sim, -self.class_num)
 
@@ -550,6 +570,7 @@ class GnnCrossEntropyLoss(nn.Module):
 
         return loss
 
+
 class GNNFocalLoss(nn.Module):
     def __init__(self, alpha=1, gamma=2, reduction='mean'):
         super(GNNFocalLoss, self).__init__()
@@ -559,8 +580,11 @@ class GNNFocalLoss(nn.Module):
 
     def forward(self, inputs, targets):
         eps = 1e-7
-        loss_1 = -1 * self.alpha * torch.pow((1 - inputs), self.gamma) * torch.log(inputs + eps) * targets
-        loss_0 = -1 * (1 - self.alpha) * torch.pow(inputs, self.gamma) * torch.log(1 - inputs + eps) * (1 - targets)
+        loss_1 = -1 * self.alpha * \
+            torch.pow((1 - inputs), self.gamma) * \
+            torch.log(inputs + eps) * targets
+        loss_0 = -1 * (1 - self.alpha) * torch.pow(inputs,
+                                                   self.gamma) * torch.log(1 - inputs + eps) * (1 - targets)
 
         loss = loss_0 + loss_1
         if self.reduction == 'mean':
@@ -568,3 +592,91 @@ class GNNFocalLoss(nn.Module):
         elif self.reduction == 'sum':
             return loss
 
+
+# class FocalLoss(nn.CrossEntropyLoss):
+
+#     def __init__(self, gamma, alpha=None, ignore_index=-100. reduction='none'):
+#         super().__init__(weight=alpha, ignore_index=ignore_index, reduction='none')
+#         self.reduction = reduction
+#         self.gamma = gamma
+#         self.alpha = alpha
+
+#     def forward(self, input_, target):
+#         cross_entropy = super().forward(input_, target)
+#         target = target * (target != self.ignore_index).long()
+#         input_prob = torch.gather(F.softmax(input_, 1), 1, target.unsqueeze(1))
+#         loss = torch.pow(1 - input_prob, self.gamma) * cross_entropy
+#         return torch.mean(loss) if self.reduction == 'mean' else torch.sum(loss) if self.reduction == 'sum' else loss
+
+def focal_loss(
+    input: torch.Tensor,
+    target: torch.Tensor,
+    alpha: float,
+    gamma: float = 1.5,
+    reduction: str = 'none',
+    eps: Optional[float] = None,
+) -> torch.Tensor:
+    if eps is not None and not torch.jit.is_scripting():
+        warnings.warn(
+            "`focal_loss` has been reworked for improved numerical stability "
+            "and the `eps` argument is no longer necessary",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    if not isinstance(input, torch.Tensor):
+        raise TypeError(f"Input type is not a torch.Tensor. Got {type(input)}")
+
+    if not len(input.shape) >= 2:
+        raise ValueError(
+            f"Invalid input shape, we expect BxCx*. Got: {input.shape}")
+
+    if input.size(0) != target.size(0):
+        raise ValueError(
+            f'Expected input batch_size ({input.size(0)}) to match target batch_size ({target.size(0)}).')
+
+    n = input.size(0)
+    out_size = (n,) + input.size()[2:]
+    if target.size()[1:] != input.size()[2:]:
+        raise ValueError(
+            f'Expected target size {out_size}, got {target.size()}')
+
+    if not input.device == target.device:
+        raise ValueError(
+            f"input and target must be in the same device. Got: {input.device} and {target.device}")
+
+    # compute softmax over the classes axis
+    input_soft: torch.Tensor = F.softmax(input, dim=1)
+    log_input_soft: torch.Tensor = F.log_softmax(input, dim=1)
+
+    # create the labels one hot tensor
+    target_one_hot: torch.Tensor = one_hot(
+        target, num_classes=input.shape[1], device=input.device, dtype=input.dtype)
+
+    # compute the actual focal loss
+    weight = torch.pow(-input_soft + 1.0, gamma)
+
+    focal = -alpha * weight * log_input_soft
+    loss_tmp = torch.einsum('bc...,bc...->b...', (target_one_hot, focal))
+
+    if reduction == 'none':
+        loss = loss_tmp
+    elif reduction == 'mean':
+        loss = torch.mean(loss_tmp)
+    elif reduction == 'sum':
+        loss = torch.sum(loss_tmp)
+    else:
+        raise NotImplementedError(f"Invalid reduction mode: {reduction}")
+    return loss
+
+
+class FocalLoss(nn.Module):
+
+    def __init__(self, alpha: float, gamma: float = 0, reduction: str = 'none', eps: Optional[float] = None) -> None:
+        super().__init__()
+        self.alpha: float = alpha
+        self.gamma: float = gamma
+        self.reduction: str = reduction
+        self.eps: Optional[float] = eps
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return focal_loss(input, target, self.alpha, self.gamma, self.reduction, self.eps)
