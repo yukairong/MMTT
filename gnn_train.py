@@ -8,9 +8,11 @@ ex.add_named_config('train', 'cfgs/train.yaml')
 ex.add_named_config('track', 'cfgs/track.yaml')
 ex.add_named_config('gnn', 'cfgs/gnn_train.yaml')
 
+
 @ex.main
 def load_config(_config, _run):
     sacred.commands.print_config(_run)
+
 
 if __name__ == '__main__':
     train_config = ex.named_configs['train']._conf
@@ -28,10 +30,3 @@ if __name__ == '__main__':
         main.test()
     else:
         raise ValueError("Please assign a state in (train, test)")
-
-
-
-
-
-
-
