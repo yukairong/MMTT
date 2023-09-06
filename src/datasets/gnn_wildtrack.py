@@ -9,10 +9,10 @@ import dgl
 import torch
 from torchvision import transforms as T
 from torch.utils.data import Dataset
-from models.multi_view_deformable_tracking import MultiViewDeformableTrack
+from src.models.multi_view_deformable_tracking import MultiViewDeformableTrack
 
-import utils.misc
-from datasets.coco import CocoDetection, make_coco_transforms
+import src.utils.misc
+from src.datasets.coco import CocoDetection, make_coco_transforms
 from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -210,7 +210,7 @@ class WildTrackGnnDataset(BaseGraphDataset):
         samples, targets, views = self.coco_dataset[index]
         # samples = torch.vstack(samples).to(self.device)
         samples = [sample.to(self.device) for sample in samples]
-        targets = [utils.misc.nested_dict_to_device(
+        targets = [src.utils.misc.nested_dict_to_device(
             t, device=self.device) for t in targets]
 
         # track model的正向推理

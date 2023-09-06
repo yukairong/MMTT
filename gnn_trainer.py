@@ -16,8 +16,8 @@ from src.models.mlp import NodeFeatureEncoder, EdgeFeatureEncoder, EdgePredictor
 from src.models.mpn import MPN
 from src.models import build_model
 from src.models.cluster import ClusterDetections
-from datasets.gnn_wildtrack import build_gnn_wildtrack
-from utils.misc import udf_collate_fn
+from src.datasets.gnn_wildtrack import build_gnn_wildtrack
+from src.utils.misc import udf_collate_fn
 from src.models.criterion import FocalLoss
 import numpy as np
 

@@ -52,6 +52,7 @@ train_split: wildtrack_train_coco
 val_split: wildtrack_val_coco
 dataset: 'wildTrack'
 
+wildtrack_path_val: "/data2/YuLe/02-fancy/Wildtrack_dataset_val/"
 wildtrack_path_train: "/data2/YuLe/02-fancy/Wildtrack_dataset_train/"  # train dataset root (kongcheng)
 mot_path_val: 'D:\dataset\MOT\Wildtrack_dataset_val' # valid dataset root
 track_prev_frame_rnd_augs: 0.01 # crop augment
