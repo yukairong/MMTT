@@ -1,7 +1,7 @@
 # training config
 train: True
 epochs: 10
-batch_size: 16
+batch_size: 32
 eval_batch_size: 64
 max_passing_steps: 4
 loss_name: 'CE_weighted' # CE_weighted Focal BCE_weighted BCE
