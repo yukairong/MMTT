@@ -25,10 +25,16 @@ def build_gnn_wildtrack(image_set, feature_extractor, args):
     :param args:
     :return:
     """
-    root = Path(args.wildtrack_path_train)
+    if image_set == 'eval':
+        root = Path(args.wildtrack_path_val)
+    else:
+        root = Path(args.wildtrack_path_train)
     assert root.exists(), f'provided COCO path {root} does not exist'
 
-    split = getattr(args, f"{image_set}_split")
+    if image_set == 'eval':
+        split = getattr(args, "val_split")
+    else:
+        split = getattr(args, f"{image_set}_split")
 
     # wildTrack图片路径
     img_folder = root / split
@@ -108,7 +114,7 @@ class WildTrackDatset(CocoDetection):
         view_id = target['view_id'][0] + 1
         views_frame_image_ids = target['views_frame_image_ids']
 
-        frame_offset = int(target['image_id'].cpu().numpy()) % len(self.coco.dataset)
+        frame_offset = int(target['image_id'].cpu().numpy()) % int(len(self) / 7)
 
         res_img_list = []
         res_target_list = []
@@ -154,9 +160,9 @@ class WildTrackDatset(CocoDetection):
 
             res_img_list.append(img)
             res_target_list.append(target)
-            res_view_list.append(view_img_id // 400)
+            res_view_list.append(view_img_id // int(len(self) / 7))
 
-        return res_img_list[:6], res_target_list[:6], res_view_list[:6]
+        return res_img_list[:7], res_target_list[:7], res_view_list[:7]
 
 
 class BaseGraphDataset(Dataset):
