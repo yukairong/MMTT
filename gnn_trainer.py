@@ -16,8 +16,8 @@ from src.models.mlp import NodeFeatureEncoder, EdgeFeatureEncoder, EdgePredictor
 from src.models.mpn import MPN
 from src.models import build_model
 from src.models.cluster import ClusterDetections
-from src.datasets.gnn_wildtrack import build_gnn_wildtrack
-from src.utils.misc import udf_collate_fn
+from datasets.gnn_wildtrack import build_gnn_wildtrack
+from utils.misc import udf_collate_fn
 from src.models.criterion import FocalLoss
 import numpy as np
 
@@ -117,12 +117,29 @@ class GnnTrainer:
              {"params": self.edge_feature_encoder.parameters()},
              {"params": self.mpn.parameters()},
              {"params": self.predictor.parameters()}],
-            lr=0.01
+            lr=0.01,
+            momentum=0.9,
+            weight_decay=1.0e-4
         )
+        lr_warmup_list = np.linspace(0, 0.01, 5 + 1, endpoint=False)
+        lr_warmup_list = lr_warmup_list[1:]
+
         scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optim, self.gnn_args.epochs, eta_min=1e-6)
+            optim, self.gnn_args.epochs)
+        scheduler_step = torch.optim.lr_scheduler.StepLR(
+            optim, step_size=3, gamma=0.1)
+
+        # optim = torch.optim.SGD(
+        #     [{"params": self.node_feature_encoder.parameters()},
+        #      {"params": self.edge_feature_encoder.parameters()},
+        #      {"params": self.mpn.parameters()},
+        #      {"params": self.predictor.parameters()}],
+        #     lr=0.01
+        # )
+        # scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #     optim, self.gnn_args.epochs, eta_min=1e-6)
         scheduler_warmup = GradualWarmupScheduler(
-            optim, 1.0, 10, scheduler_cosine)
+            optim, 1.0, 2, scheduler_step)
         # this zero gradient update is needed to avoid a warning message
         optim.zero_grad()
         optim.step()
