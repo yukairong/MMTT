@@ -273,7 +273,7 @@ class WildTrackGnnDataset(BaseGraphDataset):
             lbls + lbls, dtype=torch.float32, device=self.device)
         embedding = torch.vstack((
             torch.pairwise_distance(node_feature[u], node_feature[v]),
-            torch.cosine_similarity(node_feature[u], node_feature[v])
+            1 - torch.cosine_similarity(node_feature[u], node_feature[v])
         )).T
         edge_feature = torch.cat((embedding, embedding))    # (E, 2)
 
