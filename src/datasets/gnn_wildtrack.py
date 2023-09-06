@@ -28,8 +28,6 @@ def build_gnn_wildtrack(image_set, feature_extractor, args):
     root = Path(args.wildtrack_path_train)
     assert root.exists(), f'provided COCO path {root} does not exist'
 
-    # TODO: 缺少验证数据，暂时全部按照训练集
-    image_set = 'train'
     split = getattr(args, f"{image_set}_split")
 
     # wildTrack图片路径
