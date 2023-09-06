@@ -1,13 +1,18 @@
+import csv
+import os
+import random
 from pathlib import Path
 import random
 import numpy as np
 
 import dgl
 import torch
+from torchvision import transforms as T
 from torch.utils.data import Dataset
+from models.multi_view_deformable_tracking import MultiViewDeformableTrack
 
-import src.utils.misc
-from src.datasets.coco import CocoDetection, make_coco_transforms
+import utils.misc
+from datasets.coco import CocoDetection, make_coco_transforms
 from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -142,7 +147,7 @@ class WildTrackDatset(CocoDetection):
                     prev_prev_frame_id = min(max(0, prev_frame_id + prev_frame_id - frame_id),
                                              self.seq_length(view_img_id) - 1)
                     prev_prev_image_id = self.coco.imgs[view_img_id]['first_frame_image_id'] + \
-                                         prev_prev_frame_id
+                        prev_prev_frame_id
 
                     prev_prev_img, prev_prev_target = self._getitem_from_id(
                         prev_prev_image_id, random_state)
@@ -169,10 +174,10 @@ class BaseGraphDataset(Dataset):
         # ==== These values can be loaded via self.load_dataset() ====
         # homography matrices, H[seq_id][cam_id] => torch.Tensor(3*3)
         self._H = []
-        self._P = []  # images name pattern, F[seq_id][cam_id] => image path pattern
+        self._P = []    # images name pattern, F[seq_id][cam_id] => image path pattern
         # frames in sequences, S[seq_id] => frame based dict (key type: str)
         self._S = []
-        self._SFI = None  # a (N*2) size tensor, store < seq_id, frame_id>
+        self._SFI = None    # a (N*2) size tensor, store < seq_id, frame_id>
 
     def __len__(self):
         raise NotImplementedError
@@ -201,7 +206,7 @@ class WildTrackGnnDataset(BaseGraphDataset):
         samples, targets, views = self.coco_dataset[index]
         # samples = torch.vstack(samples).to(self.device)
         samples = [sample.to(self.device) for sample in samples]
-        targets = [src.utils.misc.nested_dict_to_device(
+        targets = [utils.misc.nested_dict_to_device(
             t, device=self.device) for t in targets]
 
         # track model的正向推理
@@ -266,7 +271,7 @@ class WildTrackGnnDataset(BaseGraphDataset):
             torch.pairwise_distance(node_feature[u], node_feature[v]),
             torch.cosine_similarity(node_feature[u], node_feature[v])
         )).T
-        edge_feature = torch.cat((embedding, embedding))  # (E, 2)
+        edge_feature = torch.cat((embedding, embedding))    # (E, 2)
 
         return graph, node_feature, edge_feature, y_true
 
