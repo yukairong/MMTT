@@ -112,14 +112,13 @@ class GnnTrainer:
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
 
-        optim = torch.optim.SGD(
+        optim = torch.optim.Adam(
             [{"params": self.node_feature_encoder.parameters()},
              {"params": self.edge_feature_encoder.parameters()},
              {"params": self.mpn.parameters()},
              {"params": self.predictor.parameters()}],
-            lr=0.01,
-            momentum=0.9,
-            weight_decay=1.0e-4
+            lr=0.15,
+            momentum=0.9
         )
         lr_warmup_list = np.linspace(0, 0.01, 5 + 1, endpoint=False)
         lr_warmup_list = lr_warmup_list[1:]

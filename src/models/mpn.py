@@ -12,12 +12,14 @@ class MPN(nn.Module):
         self.node_msg_encoder = nn.Sequential(
             nn.Linear(38, 64),
             nn.ReLU(),
+            nn.BatchNorm1d(64),
             nn.Linear(64, 32),
             nn.ReLU()
         )
         self.edge_msg_encoder = nn.Sequential(
             nn.Linear(70, 32),
             nn.ReLU(),
+            nn.BatchNorm1d(32),
             nn.Linear(32, 6),
             nn.ReLU()
         )
